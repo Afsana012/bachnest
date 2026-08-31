@@ -23,6 +23,21 @@ function buildUrl(endpoint: string) {
   return `${API_BASE}${endpoint.startsWith("/") ? endpoint : `/${endpoint}`}`;
 }
 
+const REQUEST_TIMEOUT_MS = 20000;
+
+function requestTimeout() {
+  return typeof AbortSignal !== "undefined" && "timeout" in AbortSignal
+    ? { signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) }
+    : {};
+}
+
+function timeoutMessage(err: unknown) {
+  if (err instanceof Error && (err.name === "TimeoutError" || err.name === "AbortError")) {
+    return "The server took too long to respond. Try again.";
+  }
+  return null;
+}
+
 function authHeaders(json: boolean) {
   const token = getAccessToken();
   const headers = new Headers();
@@ -41,6 +56,7 @@ async function refreshAccessToken(): Promise<boolean> {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ refresh_token: refreshToken }),
       cache: "no-store",
+      ...requestTimeout(),
     });
     if (!res.ok) return false;
     const body = await res.json();
@@ -83,6 +99,7 @@ export async function fetchApi<T>(endpoint: string, options: RequestInit = {}, i
       ...options,
       headers: authHeaders(true),
       cache: options.cache || "no-store",
+      ...requestTimeout(),
     });
 
     if (res.status === 401 && token && !skipRefresh && !isRetry) {
@@ -108,10 +125,11 @@ export async function fetchApi<T>(endpoint: string, options: RequestInit = {}, i
     }
     return data;
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Network error";
+    const timedOut = timeoutMessage(err);
+    const message = timedOut || (err instanceof Error ? err.message : "Network error");
     return toError<T>(
       message.includes("fetch") ? "Network error. Make sure the backend server is running." : message,
-      "NETWORK_ERROR"
+      timedOut ? "TIMEOUT" : "NETWORK_ERROR"
     );
   }
 }
@@ -121,6 +139,7 @@ export async function fetchPaginated<T>(endpoint: string): Promise<PaginatedApiR
     const res = await fetch(buildUrl(endpoint), {
       headers: authHeaders(true),
       cache: "no-store",
+      ...requestTimeout(),
     });
     if (!res.ok) {
       return { success: false, items: [], meta: { page: 1, limit: 20, total: 0, total_pages: 0 } };
@@ -144,6 +163,7 @@ export async function uploadFile(
       headers: authHeaders(false),
       body: form,
       cache: "no-store",
+      ...requestTimeout(),
     });
 
     const data = await res.json();
@@ -156,7 +176,11 @@ export async function uploadFile(
       };
     }
     return data;
-  } catch {
-    return toError<{ file_url: string; filename?: string }>("Upload failed. Check your connection.", "NETWORK_ERROR");
+  } catch (err) {
+    const timedOut = timeoutMessage(err);
+    return toError<{ file_url: string; filename?: string }>(
+      timedOut || "Upload failed. Check your connection.",
+      timedOut ? "TIMEOUT" : "NETWORK_ERROR"
+    );
   }
 }

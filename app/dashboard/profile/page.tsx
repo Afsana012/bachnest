@@ -7,7 +7,7 @@ import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useAuth } from "@/hooks/use-auth";
+import { useAuth, refreshUser } from "@/hooks/use-auth";
 import { fetchApi, uploadFile } from "@/lib/api";
 import { User } from "@/lib/types";
 
@@ -64,6 +64,7 @@ export default function ProfilePage() {
     });
     setSaving(false);
     if (res.success) {
+      await refreshUser();
       setSavedMessage("Profile updated.");
       setTimeout(() => setSavedMessage(""), 3000);
     } else {
