@@ -49,10 +49,9 @@ export default function PropertyDetailPage() {
     const payload = {
       property_id: id,
       room_id: selectedRoom?.id,
-      move_in_date: new Date(Date.now() + 86400000 * 3).toISOString().split("T")[0],
-      special_requests: "Standard move-in",
+      requested_move_in_date: new Date(Date.now() + 86400000 * 3).toISOString().split("T")[0],
     };
-    const res = await fetchApi("/bookings", {
+    const res = await fetchApi("/bookings/request", {
       method: "POST",
       body: JSON.stringify(payload),
     });

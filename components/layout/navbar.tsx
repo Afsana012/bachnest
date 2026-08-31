@@ -154,7 +154,7 @@ export function Navbar() {
             size="sm"
             className="hidden sm:inline-flex rounded-lg gap-1.5 text-xs font-semibold"
           >
-            <Link href={isAuthenticated ? "/dashboard?tab=post-property" : "/auth/register?role=property_owner"}>
+            <Link href={isAuthenticated ? "/dashboard/properties/new" : "/auth/register?role=property_owner"}>
               <Plus className="h-3.5 w-3.5" />
               <span>Post To-Let</span>
             </Link>
@@ -269,7 +269,7 @@ export function Navbar() {
       {isMobileOpen && (
         <div className="md:hidden border-b border-border bg-background px-4 py-4 space-y-3 animate-in slide-in-from-top duration-150">
           <Button asChild className="w-full justify-center gap-1.5 rounded-lg text-xs font-semibold" size="sm">
-            <Link href={isAuthenticated ? "/dashboard?tab=post-property" : "/auth/register?role=property_owner"}>
+            <Link href={isAuthenticated ? "/dashboard/properties/new" : "/auth/register?role=property_owner"}>
               <Plus className="h-3.5 w-3.5" />
               <span>Post To-Let</span>
             </Link>
