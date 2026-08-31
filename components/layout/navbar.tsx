@@ -12,9 +12,6 @@ import {
   LayoutDashboard,
   ShieldAlert,
   Plus,
-  Compass,
-  FileText,
-  Wrench,
   CheckCircle2,
   Home,
 } from "lucide-react";
@@ -23,11 +20,11 @@ import { useAuth } from "@/hooks/use-auth";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 
 const NAV_ITEMS = [
-  { label: "Browse Properties", href: "/properties" },
-  { label: "Single Rooms", href: "/properties?room_type=single" },
-  { label: "Shared Seats", href: "/properties?room_type=shared" },
-  { label: "Flats & Sublets", href: "/properties?type=apartment" },
-  { label: "Mess & Hostels", href: "/properties?type=hostel" },
+  { label: "All Properties", href: "/properties" },
+  { label: "Flats", href: "/properties?type=FLAT" },
+  { label: "Sublets", href: "/properties?type=SUBLET" },
+  { label: "Mess", href: "/properties?type=MESS" },
+  { label: "Hostels", href: "/properties?type=HOSTEL" },
 ];
 
 export function Navbar() {
@@ -37,6 +34,7 @@ export function Navbar() {
   const [isBrowseOpen, setIsBrowseOpen] = React.useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = React.useState(false);
   const [isMobileOpen, setIsMobileOpen] = React.useState(false);
+  const [prevPathname, setPrevPathname] = React.useState(pathname);
 
   const browseRef = React.useRef<HTMLDivElement>(null);
   const userMenuRef = React.useRef<HTMLDivElement>(null);
@@ -55,11 +53,12 @@ export function Navbar() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  React.useEffect(() => {
+  if (prevPathname !== pathname) {
+    setPrevPathname(pathname);
     setIsBrowseOpen(false);
     setIsUserMenuOpen(false);
     setIsMobileOpen(false);
-  }, [pathname]);
+  }
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/60 bg-background/80 backdrop-blur-md">
@@ -113,11 +112,11 @@ export function Navbar() {
                   ))}
                   <div className="my-1 border-t border-border" />
                   <Link
-                    href="/properties?gender=female_only"
+                    href="/properties?area=Mirpur"
                     onClick={() => setIsBrowseOpen(false)}
                     className="block px-3 py-2 rounded-lg text-sm text-primary font-medium hover:bg-muted transition-colors"
                   >
-                    Female-Only Accommodations
+                    Popular in Mirpur
                   </Link>
                 </div>
               )}
@@ -214,14 +213,24 @@ export function Navbar() {
                   )}
 
                   {user.role === "OWNER" && (
-                    <Link
-                      href="/dashboard/properties/new"
-                      onClick={() => setIsUserMenuOpen(false)}
-                      className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-popover-foreground hover:bg-muted transition-colors"
-                    >
-                      <Home className="h-4 w-4 text-muted-foreground" />
-                      <span>Post Property</span>
-                    </Link>
+                    <>
+                      <Link
+                        href="/dashboard/owner"
+                        onClick={() => setIsUserMenuOpen(false)}
+                        className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-popover-foreground hover:bg-muted transition-colors"
+                      >
+                        <Home className="h-4 w-4 text-muted-foreground" />
+                        <span>Owner Hub</span>
+                      </Link>
+                      <Link
+                        href="/dashboard/properties/new"
+                        onClick={() => setIsUserMenuOpen(false)}
+                        className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-popover-foreground hover:bg-muted transition-colors"
+                      >
+                        <Plus className="h-4 w-4 text-muted-foreground" />
+                        <span>Post Property</span>
+                      </Link>
+                    </>
                   )}
 
                   <div className="my-1 h-px bg-border" />
@@ -285,10 +294,10 @@ export function Navbar() {
               </Link>
             ))}
             <Link
-              href="/properties?gender=female_only"
+              href="/properties?area=Mirpur"
               className="block px-2 py-1.5 rounded-lg text-sm text-primary font-medium hover:bg-muted transition-colors"
             >
-              Female-Only Accommodations
+              Popular in Mirpur
             </Link>
             <Link
               href="/properties?tab=roommates"
@@ -317,6 +326,22 @@ export function Navbar() {
                     Dashboard
                   </Link>
                 </Button>
+                {user.role === "OWNER" && (
+                  <Button variant="outline" size="sm" asChild className="w-full justify-start rounded-lg">
+                    <Link href="/dashboard/owner">
+                      <Home className="h-4 w-4 mr-2" />
+                      Owner Hub
+                    </Link>
+                  </Button>
+                )}
+                {(user.role === "ADMIN" || user.role === "SUPER_ADMIN") && (
+                  <Button variant="outline" size="sm" asChild className="w-full justify-start rounded-lg">
+                    <Link href="/admin/dashboard">
+                      <ShieldAlert className="h-4 w-4 mr-2" />
+                      Admin Panel
+                    </Link>
+                  </Button>
+                )}
                 <Button
                   variant="ghost"
                   size="sm"

@@ -1,15 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Building2, User, Phone, Mail, Lock, Check, ArrowLeft } from "lucide-react";
+import { Building2, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { fetchApi } from "@/lib/api";
+import { fetchApi, saveTokens } from "@/lib/api";
+import { TokenPair } from "@/lib/types";
 
-export default function RegisterPage() {
+function RegisterForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const defaultRole = searchParams.get("role") || "bachelor";
@@ -30,7 +31,7 @@ export default function RegisterPage() {
     setLoading(true);
     setError("");
 
-    const res = await fetchApi<{ access_token: string; refresh_token: string }>("/auth/register", {
+    const res = await fetchApi("/auth/register", {
       method: "POST",
       body: JSON.stringify({
         full_name: `${firstName} ${lastName}`.trim(),
@@ -41,13 +42,23 @@ export default function RegisterPage() {
       }),
     });
 
+    if (!res.success) {
+      setLoading(false);
+      setError(res.message || "Registration failed. Please verify your details.");
+      return;
+    }
+
+    const loginRes = await fetchApi<TokenPair>("/auth/login", {
+      method: "POST",
+      body: JSON.stringify({ identifier: phone, password }),
+    });
+
     setLoading(false);
-    if (res.success && res.data) {
-      localStorage.setItem("bachnest_access_token", res.data.access_token);
-      localStorage.setItem("bachnest_refresh_token", res.data.refresh_token);
+    if (loginRes.success && loginRes.data) {
+      saveTokens(loginRes.data);
       router.push("/dashboard");
     } else {
-      setError(res.message || "Registration failed. Please verify your details.");
+      router.push("/auth/login");
     }
   };
 
@@ -143,5 +154,13 @@ export default function RegisterPage() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense fallback={null}>
+      <RegisterForm />
+    </Suspense>
   );
 }

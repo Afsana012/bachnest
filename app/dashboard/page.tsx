@@ -1,16 +1,22 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Home, FileText, Wrench, Plus, UserCircle, ShieldAlert, CheckCircle2 } from "lucide-react";
+import { UserCircle, ShieldAlert, CheckCircle2, Building2 } from "lucide-react";
 import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
 import { useAuth } from "@/hooks/use-auth";
 import { fetchApi } from "@/lib/api";
-import { Tenancy, Invoice, UserKYC, Complaint } from "@/lib/types";
+import { Booking, Complaint, Invoice, KYCOut, Tenancy } from "@/lib/types";
+import { TenancyPanel } from "@/components/dashboard/tenancy-panel";
+import { InvoicePanel } from "@/components/dashboard/invoice-panel";
+import { ComplaintPanel } from "@/components/dashboard/complaint-panel";
+import { BookingPanel } from "@/components/dashboard/booking-panel";
+import { NoticePanel } from "@/components/dashboard/notice-panel";
+
+type DashboardTab = "tenancies" | "invoices" | "complaints" | "bookings" | "notices";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -18,12 +24,26 @@ export default function DashboardPage() {
   const [tenancies, setTenancies] = useState<Tenancy[]>([]);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [complaints, setComplaints] = useState<Complaint[]>([]);
-  const [kyc, setKyc] = useState<UserKYC | null>(null);
+  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [kyc, setKyc] = useState<KYCOut | null>(null);
 
-  const [activeTab, setActiveTab] = useState<"tenancies" | "invoices" | "complaints">("tenancies");
-  const [newComplaintTitle, setNewComplaintTitle] = useState("");
-  const [newComplaintCategory, setNewComplaintCategory] = useState("PLUMBING");
-  const [submittingComplaint, setSubmittingComplaint] = useState(false);
+  const [activeTab, setActiveTab] = useState<DashboardTab>("tenancies");
+
+  const loadDashboardData = useCallback(async () => {
+    const [tenRes, invRes, kycRes, compRes, bookRes] = await Promise.all([
+      fetchApi<Tenancy[]>("/tenancies/me"),
+      fetchApi<Invoice[]>("/billing/invoices"),
+      fetchApi<KYCOut>("/kyc/me"),
+      fetchApi<Complaint[]>("/complaints"),
+      fetchApi<Booking[]>("/bookings/me"),
+    ]);
+
+    if (tenRes.success && tenRes.data) setTenancies(tenRes.data);
+    if (invRes.success && invRes.data) setInvoices(invRes.data);
+    if (kycRes.success && kycRes.data) setKyc(kycRes.data);
+    if (compRes.success && compRes.data) setComplaints(compRes.data);
+    if (bookRes.success && bookRes.data) setBookings(bookRes.data);
+  }, []);
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
@@ -31,49 +51,11 @@ export default function DashboardPage() {
       return;
     }
 
-    async function loadDashboardData() {
-      const [tenRes, invRes, kycRes, compRes] = await Promise.all([
-        fetchApi<Tenancy[]>("/tenancies/me"),
-        fetchApi<Invoice[]>("/billing/invoices"),
-        fetchApi<UserKYC>("/kyc/me"),
-        fetchApi<Complaint[]>("/complaints"),
-      ]);
-
-      if (tenRes.success && tenRes.data) setTenancies(tenRes.data);
-      if (invRes.success && invRes.data) setInvoices(invRes.data);
-      if (kycRes.success && kycRes.data) setKyc(kycRes.data);
-      if (compRes.success && compRes.data) setComplaints(compRes.data);
-    }
-
     if (isAuthenticated) {
-      loadDashboardData();
+      const t = setTimeout(loadDashboardData, 0);
+      return () => clearTimeout(t);
     }
-  }, [isAuthenticated, loading, router]);
-
-  const handleCreateComplaint = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!tenancies.length) {
-      alert("You need an active tenancy to file a complaint.");
-      return;
-    }
-    setSubmittingComplaint(true);
-    const res = await fetchApi<Complaint>("/complaints", {
-      method: "POST",
-      body: JSON.stringify({
-        tenancy_id: tenancies[0].id,
-        property_id: tenancies[0].property_id,
-        title: newComplaintTitle,
-        description: `Maintenance ticket for ${newComplaintCategory.toLowerCase()}`,
-        category: newComplaintCategory,
-        priority: "MEDIUM",
-      }),
-    });
-    setSubmittingComplaint(false);
-    if (res.success && res.data) {
-      setComplaints([res.data, ...complaints]);
-      setNewComplaintTitle("");
-    }
-  };
+  }, [isAuthenticated, loading, router, loadDashboardData]);
 
   if (loading) {
     return (
@@ -87,26 +69,35 @@ export default function DashboardPage() {
     );
   }
 
+  const tabs: Array<{ key: DashboardTab; label: string; count: number }> = [
+    { key: "tenancies", label: "Tenancies", count: tenancies.length },
+    { key: "invoices", label: "Invoices", count: invoices.length },
+    { key: "complaints", label: "Maintenance", count: complaints.length },
+    { key: "bookings", label: "Bookings", count: bookings.length },
+  ];
+
   return (
     <div className="min-h-screen flex flex-col bg-background text-foreground">
       <Navbar />
       <main className="flex-1 py-12">
         <div className="container mx-auto max-w-6xl px-4 sm:px-6">
-          
-          {/* Header */}
           <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-border pb-8 mb-8">
             <div>
-              <h1 className="text-3xl font-semibold tracking-tight text-foreground">Welcome, {user?.full_name?.split(" ")[0] || "User"}</h1>
+              <h1 className="text-3xl font-semibold tracking-tight text-foreground">
+                Welcome, {user?.full_name?.split(" ")[0] || "User"}
+              </h1>
               <p className="text-sm text-muted-foreground mt-2">Manage your residential leases, payments, and support tickets.</p>
             </div>
             <div className="flex items-center gap-3">
-              <Badge variant="outline" className="px-3 py-1 font-medium capitalize shadow-sm bg-background">
+              <Badge variant="outline" className="px-3 py-1 font-medium shadow-sm bg-background">
                 {user?.role.toLowerCase().replace("_", " ")}
               </Badge>
+              <Button variant="outline" size="sm" onClick={() => router.push("/dashboard/profile")}>
+                <UserCircle className="h-4 w-4 mr-1.5" /> Profile
+              </Button>
             </div>
           </div>
 
-          {/* Admin Shortcut Banner */}
           {(user?.role === "ADMIN" || user?.role === "SUPER_ADMIN") && (
             <div className="mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-5 shadow-sm">
               <div className="flex items-start gap-4">
@@ -114,17 +105,37 @@ export default function DashboardPage() {
                 <div>
                   <h3 className="font-semibold text-emerald-700 dark:text-emerald-400 text-sm">Admin Access Enabled</h3>
                   <p className="text-sm text-emerald-600/80 dark:text-emerald-400/80 mt-1">
-                    You are logged in with Super Admin privileges.
+                    You are logged in with administrative privileges.
                   </p>
                 </div>
               </div>
-              <Button size="sm" className="shrink-0 bg-emerald-600 hover:bg-emerald-700 text-white" onClick={() => router.push("/admin/dashboard")}>
+              <Button
+                size="sm"
+                className="shrink-0 bg-emerald-600 hover:bg-emerald-700 text-white"
+                onClick={() => router.push("/admin/dashboard")}
+              >
                 Go to Admin Panel
               </Button>
             </div>
           )}
 
-          {/* KYC Alert */}
+          {user?.role === "OWNER" && (
+            <div className="mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 rounded-xl border border-primary/30 bg-primary/5 p-5 shadow-sm">
+              <div className="flex items-start gap-4">
+                <Building2 className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+                <div>
+                  <h3 className="font-semibold text-foreground text-sm">Manage your properties</h3>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Approve bookings, add rooms, publish listings, and generate invoices from the owner hub.
+                  </p>
+                </div>
+              </div>
+              <Button size="sm" className="shrink-0" onClick={() => router.push("/dashboard/owner")}>
+                Open Owner Hub
+              </Button>
+            </div>
+          )}
+
           {(!kyc || kyc.status !== "APPROVED") && (
             <div className="mb-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 rounded-xl border border-border bg-muted/40 p-5 shadow-sm">
               <div className="flex items-start gap-4">
@@ -132,39 +143,53 @@ export default function DashboardPage() {
                 <div>
                   <h3 className="font-semibold text-foreground text-sm">Action Required: Verify Identity</h3>
                   <p className="text-sm text-muted-foreground mt-1 max-w-xl">
-                    Submit your National ID (NID) and Student/Job ID to unlock instant bookings, digital agreements, and priority support.
+                    {kyc?.status === "REJECTED"
+                      ? `Your KYC was rejected: ${kyc.rejection_reason || "documents unclear"}. Please resubmit corrected documents.`
+                      : "Submit your National ID (NID) and Student/Job ID to unlock instant bookings, digital agreements, and priority support."}
                   </p>
                 </div>
               </div>
               <Button size="sm" variant="outline" className="shrink-0 bg-background hover:bg-muted" onClick={() => router.push("/dashboard/kyc")}>
-                Complete KYC
+                {kyc?.status === "REJECTED" ? "Resubmit KYC" : "Complete KYC"}
               </Button>
             </div>
           )}
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
-            {/* Sidebar / User Info */}
             <div className="lg:col-span-4 space-y-6">
               <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
                 <div className="flex items-center gap-4 mb-6">
-                  <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center text-muted-foreground">
-                    <UserCircle className="h-7 w-7" />
+                  <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center text-muted-foreground overflow-hidden">
+                    {user?.avatar_url ? (
+                      <img src={user.avatar_url} alt={user.full_name} className="h-full w-full object-cover" />
+                    ) : (
+                      <UserCircle className="h-7 w-7" />
+                    )}
                   </div>
                   <div>
                     <h3 className="font-semibold text-foreground">{user?.full_name}</h3>
                     <p className="text-sm text-muted-foreground">{user?.email}</p>
                   </div>
                 </div>
-                
+
                 <div className="space-y-4 text-sm">
                   <div className="flex justify-between items-center py-2 border-b border-border/50">
                     <span className="text-muted-foreground">Phone</span>
-                    <span className="font-medium">{user?.phone}</span>
+                    <span className="font-medium flex items-center gap-1.5">
+                      {user?.phone}
+                      {user?.is_phone_verified ? (
+                        <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+                      ) : (
+                        <span className="text-[10px] text-amber-500">unverified</span>
+                      )}
+                    </span>
                   </div>
                   <div className="flex justify-between items-center py-2 border-b border-border/50">
                     <span className="text-muted-foreground">Verification</span>
                     {user?.is_kyc_verified ? (
-                      <span className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-500 font-medium"><CheckCircle2 className="h-4 w-4"/> Verified</span>
+                      <span className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-500 font-medium">
+                        <CheckCircle2 className="h-4 w-4" /> Verified
+                      </span>
                     ) : (
                       <span className="text-amber-600 dark:text-amber-500 font-medium">Pending</span>
                     )}
@@ -177,173 +202,41 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {/* Main Content Area */}
             <div className="lg:col-span-8">
-              {/* Minimal Tabs */}
-              <div className="flex items-center gap-6 border-b border-border mb-8">
+              <div className="flex items-center gap-6 border-b border-border mb-8 overflow-x-auto">
+                {tabs.map((tab) => (
+                  <button
+                    key={tab.key}
+                    onClick={() => setActiveTab(tab.key)}
+                    className={`pb-3 text-sm font-medium transition-all whitespace-nowrap ${
+                      activeTab === tab.key
+                        ? "text-foreground border-b-2 border-foreground"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    {tab.label} ({tab.count})
+                  </button>
+                ))}
                 <button
-                  onClick={() => setActiveTab("tenancies")}
-                  className={`pb-3 text-sm font-medium transition-all ${
-                    activeTab === "tenancies" 
-                      ? "text-foreground border-b-2 border-foreground" 
+                  onClick={() => setActiveTab("notices")}
+                  className={`pb-3 text-sm font-medium transition-all whitespace-nowrap ${
+                    activeTab === "notices"
+                      ? "text-foreground border-b-2 border-foreground"
                       : "text-muted-foreground hover:text-foreground"
                   }`}
                 >
-                  Tenancies ({tenancies.length})
-                </button>
-                <button
-                  onClick={() => setActiveTab("invoices")}
-                  className={`pb-3 text-sm font-medium transition-all ${
-                    activeTab === "invoices" 
-                      ? "text-foreground border-b-2 border-foreground" 
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  Invoices ({invoices.length})
-                </button>
-                <button
-                  onClick={() => setActiveTab("complaints")}
-                  className={`pb-3 text-sm font-medium transition-all ${
-                    activeTab === "complaints" 
-                      ? "text-foreground border-b-2 border-foreground" 
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  Maintenance ({complaints.length})
+                  Notices
                 </button>
               </div>
 
-              {/* Tab Contents */}
               <div className="space-y-6">
-                
-                {/* TENANCIES TAB */}
-                {activeTab === "tenancies" && (
-                  <div>
-                    <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                      <Home className="h-5 w-5 text-muted-foreground" /> Active Agreements
-                    </h2>
-                    {tenancies.length > 0 ? (
-                      <div className="space-y-4">
-                        {tenancies.map((t) => (
-                          <div key={t.id} className="p-5 rounded-xl border border-border bg-card shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:border-border/80 transition-colors">
-                            <div>
-                              <h4 className="font-semibold text-foreground">{t.property_title || "Residential Property"}</h4>
-                              <p className="text-sm text-muted-foreground mt-1">Move-in: {t.lease_start_date} • Rent: ৳{t.agreed_monthly_rent}</p>
-                            </div>
-                            <div className="flex items-center gap-3">
-                              <Badge variant="outline" className="capitalize bg-muted/30">
-                                {t.status.replace("_", " ").toLowerCase()}
-                              </Badge>
-                              <Button variant="outline" size="sm">Details</Button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="py-12 text-center rounded-xl border border-dashed border-border bg-muted/20">
-                        <Home className="h-10 w-10 text-muted-foreground/40 mx-auto mb-3" />
-                        <p className="text-sm text-muted-foreground">You have no active tenancies.</p>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* INVOICES TAB */}
-                {activeTab === "invoices" && (
-                  <div>
-                    <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                      <FileText className="h-5 w-5 text-muted-foreground" /> Billing History
-                    </h2>
-                    {invoices.length > 0 ? (
-                      <div className="space-y-4">
-                        {invoices.map((inv) => (
-                          <div key={inv.id} className="p-5 rounded-xl border border-border bg-card shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                            <div>
-                              <h4 className="font-semibold text-foreground">Invoice #{inv.invoice_number}</h4>
-                              <p className="text-sm text-muted-foreground mt-1">Due: {inv.due_date} • Total: ৳{inv.total_amount}</p>
-                            </div>
-                            <div className="flex items-center gap-3">
-                              <Badge 
-                                variant={inv.status === "PAID" ? "default" : "destructive"} 
-                                className="capitalize shadow-none"
-                              >
-                                {inv.status.toLowerCase()}
-                              </Badge>
-                              <Button variant="outline" size="sm">View PDF</Button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="py-12 text-center rounded-xl border border-dashed border-border bg-muted/20">
-                        <FileText className="h-10 w-10 text-muted-foreground/40 mx-auto mb-3" />
-                        <p className="text-sm text-muted-foreground">No pending or past invoices found.</p>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* COMPLAINTS TAB */}
+                {activeTab === "tenancies" && <TenancyPanel tenancies={tenancies} onChanged={loadDashboardData} />}
+                {activeTab === "invoices" && <InvoicePanel invoices={invoices} onChanged={loadDashboardData} />}
                 {activeTab === "complaints" && (
-                  <div>
-                    <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                      <Wrench className="h-5 w-5 text-muted-foreground" /> Support Tickets
-                    </h2>
-                    
-                    <div className="p-5 rounded-xl border border-border bg-card shadow-sm mb-6">
-                      <h3 className="text-sm font-semibold mb-4">File a new request</h3>
-                      <form onSubmit={handleCreateComplaint} className="flex flex-col sm:flex-row gap-3">
-                        <Input
-                          placeholder="E.g. AC not cooling, sink leaking..."
-                          value={newComplaintTitle}
-                          onChange={(e) => setNewComplaintTitle(e.target.value)}
-                          className="flex-1"
-                          required
-                        />
-                        <div className="flex gap-3">
-                          <select
-                            value={newComplaintCategory}
-                            onChange={(e) => setNewComplaintCategory(e.target.value)}
-                            className="h-10 w-36 rounded-md border border-input bg-transparent px-3 text-sm focus:outline-none"
-                          >
-                            <option value="PLUMBING">Plumbing</option>
-                            <option value="ELECTRICAL">Electrical</option>
-                            <option value="INTERNET">Internet</option>
-                            <option value="CLEANING">Cleaning</option>
-                            <option value="OTHER">Other</option>
-                          </select>
-                          <Button type="submit" disabled={submittingComplaint} className="px-6 shrink-0">
-                            <Plus className="h-4 w-4 mr-2" /> File Request
-                          </Button>
-                        </div>
-                      </form>
-                    </div>
-
-                    {complaints.length > 0 ? (
-                      <div className="space-y-4">
-                        {complaints.map((c) => (
-                          <div key={c.id} className="p-5 rounded-xl border border-border bg-card shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                            <div>
-                              <h4 className="font-semibold text-foreground">{c.title}</h4>
-                              <p className="text-sm text-muted-foreground mt-1">
-                                Category: <span className="capitalize">{c.category.toLowerCase()}</span> • Created: {new Date(c.created_at).toLocaleDateString()}
-                              </p>
-                            </div>
-                            <Badge variant="outline" className="capitalize bg-muted/30">
-                              {c.status.replace("_", " ").toLowerCase()}
-                            </Badge>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="py-12 text-center rounded-xl border border-dashed border-border bg-muted/20">
-                        <Wrench className="h-10 w-10 text-muted-foreground/40 mx-auto mb-3" />
-                        <p className="text-sm text-muted-foreground">No active maintenance requests.</p>
-                      </div>
-                    )}
-                  </div>
+                  <ComplaintPanel complaints={complaints} tenancies={tenancies} onChanged={loadDashboardData} />
                 )}
-                
+                {activeTab === "bookings" && <BookingPanel bookings={bookings} onChanged={loadDashboardData} />}
+                {activeTab === "notices" && <NoticePanel />}
               </div>
             </div>
           </div>

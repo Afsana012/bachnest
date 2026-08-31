@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { User } from "@/lib/types";
-import { fetchApi } from "@/lib/api";
+import { clearTokens, fetchApi } from "@/lib/api";
 
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null);
@@ -19,16 +19,16 @@ export function useAuth() {
       if (res.success && res.data) {
         setUser(res.data);
       } else {
-        localStorage.removeItem("bachnest_access_token");
+        clearTokens();
       }
       setLoading(false);
     }
     loadUser();
   }, []);
 
-  const logout = () => {
-    localStorage.removeItem("bachnest_access_token");
-    localStorage.removeItem("bachnest_refresh_token");
+  const logout = async () => {
+    await fetchApi("/auth/logout", { method: "POST" });
+    clearTokens();
     setUser(null);
     window.location.href = "/auth/login";
   };

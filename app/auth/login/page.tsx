@@ -3,11 +3,12 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Building2, LogIn, Lock, Phone, ArrowLeft } from "lucide-react";
+import { Building2, Lock, Phone, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { fetchApi } from "@/lib/api";
+import { fetchApi, saveTokens } from "@/lib/api";
+import { TokenPair } from "@/lib/types";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -21,15 +22,14 @@ export default function LoginPage() {
     setLoading(true);
     setError("");
 
-    const res = await fetchApi<{ access_token: string; refresh_token: string }>("/auth/login", {
+    const res = await fetchApi<TokenPair>("/auth/login", {
       method: "POST",
       body: JSON.stringify({ identifier: phone, password }),
     });
 
     setLoading(false);
     if (res.success && res.data) {
-      localStorage.setItem("bachnest_access_token", res.data.access_token);
-      localStorage.setItem("bachnest_refresh_token", res.data.refresh_token);
+      saveTokens(res.data);
       router.push("/dashboard");
     } else {
       setError(res.message || "Invalid credentials. Please try again.");
