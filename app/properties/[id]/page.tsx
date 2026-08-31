@@ -131,15 +131,15 @@ export default function PropertyDetailPage() {
               <div className="grid grid-cols-3 gap-4 border-y border-border/60 py-4">
                 <div>
                   <span className="text-xs text-muted-foreground">Gender Allowed</span>
-                  <p className="font-semibold text-sm capitalize">{property.gender_preference.replace("_", " ")}</p>
+                  <p className="font-semibold text-sm capitalize">{(property as any).gender_preference?.replace("_", " ") || "Any"}</p>
                 </div>
                 <div>
-                  <span className="text-xs text-muted-foreground">Bedrooms</span>
-                  <p className="font-semibold text-sm">{property.total_bedrooms} Rooms</p>
+                  <span className="text-xs text-muted-foreground">Available Rooms</span>
+                  <p className="font-semibold text-sm">{property.rooms?.length || 1} Rooms</p>
                 </div>
                 <div>
-                  <span className="text-xs text-muted-foreground">Bathrooms</span>
-                  <p className="font-semibold text-sm">{property.total_bathrooms} Baths</p>
+                  <span className="text-xs text-muted-foreground">Property Type</span>
+                  <p className="font-semibold text-sm capitalize">{property.property_type}</p>
                 </div>
               </div>
 
@@ -179,7 +179,7 @@ export default function PropertyDetailPage() {
                 <CardHeader className="p-0 mb-4">
                   <span className="text-xs text-muted-foreground uppercase font-semibold">Monthly Rent</span>
                   <div className="flex items-baseline gap-1">
-                    <span className="text-3xl font-extrabold text-foreground">৳{property.base_rent.toLocaleString()}</span>
+                    <span className="text-3xl font-extrabold text-foreground">৳{Number((selectedRoom as any)?.monthly_rent || 0).toLocaleString()}</span>
                     <span className="text-xs text-muted-foreground">/ month</span>
                   </div>
                 </CardHeader>
@@ -187,12 +187,12 @@ export default function PropertyDetailPage() {
                 <CardContent className="p-0 space-y-4">
                   <div className="rounded-2xl bg-muted/40 p-3 text-xs space-y-1.5">
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Advance Deposit</span>
-                      <span className="font-semibold">{property.advance_deposit_months} Month(s)</span>
+                      <span className="text-muted-foreground">Security Deposit</span>
+                      <span className="font-semibold">৳{Number((selectedRoom as any)?.security_deposit || 0).toLocaleString()}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Service Charge</span>
-                      <span className="font-semibold">৳{property.service_charge || 0}</span>
+                      <span className="font-semibold">৳0 (Included)</span>
                     </div>
                   </div>
 
