@@ -1,36 +1,75 @@
+import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, Building, KeyRound } from "lucide-react";
+import { ArrowRight, Building2, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export function CtaBanner() {
   return (
-    <section className="py-16 md:py-24">
+    <section className="py-16 md:py-20 border-t border-border">
       <div className="container mx-auto max-w-7xl px-4 sm:px-6">
-        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-emerald-950 via-slate-900 to-slate-950 border border-emerald-500/20 p-8 sm:p-12 md:p-16 text-white shadow-2xl">
-          <div className="max-w-2xl">
-            <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-400 uppercase tracking-wider">
-              Join the Network
-            </span>
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight mt-3 leading-tight">
-              Are you a property owner looking for verified tenants?
-            </h2>
-            <p className="mt-4 text-sm sm:text-base text-emerald-100/80 leading-relaxed">
-              List your apartment, room, or hostel seats in minutes. Get pre-verified bachelors with digital background checks, automated monthly collections, and guaranteed rent security.
-            </p>
-            <div className="mt-8 flex flex-wrap items-center gap-3">
-              <Button size="lg" asChild className="rounded-xl bg-emerald-500 text-slate-950 hover:bg-emerald-400 font-semibold gap-2">
-                <Link href="/auth/register?role=property_owner">
-                  <Building className="h-4 w-4" />
-                  <span>List Your Property</span>
-                </Link>
-              </Button>
-              <Button size="lg" variant="outline" asChild className="rounded-xl border-white/20 text-white hover:bg-white/10 gap-2">
-                <Link href="/properties">
-                  <KeyRound className="h-4 w-4" />
-                  <span>Find a Room</span>
-                </Link>
-              </Button>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="rounded-2xl border border-border bg-card p-8 md:p-10 flex flex-col gap-5">
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
+              <Building2 className="h-5 w-5" />
             </div>
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-2">
+                For Property Owners
+              </p>
+              <h2 className="text-xl sm:text-2xl font-bold text-foreground leading-snug">
+                List your property and reach verified bachelors
+              </h2>
+              <p className="mt-3 text-sm text-muted-foreground leading-relaxed">
+                Post rooms, seats, or full apartments in minutes. Get NID-verified tenants, digital rent agreements, and automated monthly collections.
+              </p>
+            </div>
+            <div className="relative rounded-xl overflow-hidden aspect-video w-full">
+              <Image
+                src="/images/building-exterior.jpg"
+                alt="Modern apartment building"
+                fill
+                className="object-cover"
+                sizes="(max-width: 768px) 100vw, 50vw"
+              />
+            </div>
+            <Button asChild className="w-fit gap-2 rounded-xl">
+              <Link href="/auth/register?role=property_owner">
+                List Your Property
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            </Button>
+          </div>
+
+          <div className="rounded-2xl border border-border bg-muted/40 p-8 md:p-10 flex flex-col gap-5">
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
+              <Search className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-2">
+                For Bachelors &amp; Students
+              </p>
+              <h2 className="text-xl sm:text-2xl font-bold text-foreground leading-snug">
+                Browse 2,500+ rooms with zero broker fee
+              </h2>
+              <p className="mt-3 text-sm text-muted-foreground leading-relaxed">
+                Filter by area, budget, and room type. Every owner is NID-verified. Talk directly — no middleman, no commission, no hidden charges.
+              </p>
+            </div>
+            <div className="relative rounded-xl overflow-hidden aspect-video w-full">
+              <Image
+                src="/images/apartment.jpg"
+                alt="Bachelor apartment interior"
+                fill
+                className="object-cover"
+                sizes="(max-width: 768px) 100vw, 50vw"
+              />
+            </div>
+            <Button asChild variant="outline" className="w-fit gap-2 rounded-xl">
+              <Link href="/properties">
+                Browse Listings
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            </Button>
           </div>
         </div>
       </div>
