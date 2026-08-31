@@ -170,10 +170,10 @@ export function Navbar() {
                 className="flex items-center gap-2 p-1 rounded-full border border-border bg-muted/40 hover:bg-muted transition-colors"
               >
                 <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground font-semibold text-xs">
-                  {user.first_name?.[0]?.toUpperCase() || "U"}
+                  {user.full_name?.[0]?.toUpperCase() || "U"}
                 </div>
                 <span className="hidden md:inline-block text-xs font-medium pr-1 text-foreground">
-                  {user.first_name}
+                  {user.full_name}
                 </span>
                 <ChevronDown className="hidden md:inline-block h-3.5 w-3.5 text-muted-foreground mr-1" />
               </button>
@@ -183,9 +183,9 @@ export function Navbar() {
                   <div className="px-3 py-2 border-b border-border mb-1">
                     <div className="flex items-center justify-between">
                       <p className="text-xs font-semibold text-foreground truncate">
-                        {user.first_name} {user.last_name}
+                        {user.full_name}
                       </p>
-                      {user.is_verified && (
+                      {user.is_kyc_verified && (
                         <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
                       )}
                     </div>
@@ -312,7 +312,7 @@ export function Navbar() {
             {isAuthenticated && user ? (
               <div className="space-y-2">
                 <div className="px-2">
-                  <p className="text-xs font-semibold">{user.first_name} {user.last_name}</p>
+                  <p className="text-xs font-semibold">{user.full_name}</p>
                   <p className="text-[11px] text-muted-foreground">{user.email}</p>
                 </div>
                 <Button variant="outline" size="sm" asChild className="w-full justify-start rounded-lg">
