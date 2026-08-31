@@ -106,6 +106,24 @@ export default function DashboardPage() {
             </div>
           </div>
 
+          {/* Admin Shortcut Banner */}
+          {(user?.role === "ADMIN" || user?.role === "SUPER_ADMIN") && (
+            <div className="mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-5 shadow-sm">
+              <div className="flex items-start gap-4">
+                <ShieldAlert className="h-5 w-5 text-emerald-600 shrink-0 mt-0.5" />
+                <div>
+                  <h3 className="font-semibold text-emerald-700 dark:text-emerald-400 text-sm">Admin Access Enabled</h3>
+                  <p className="text-sm text-emerald-600/80 dark:text-emerald-400/80 mt-1">
+                    You are logged in with Super Admin privileges.
+                  </p>
+                </div>
+              </div>
+              <Button size="sm" className="shrink-0 bg-emerald-600 hover:bg-emerald-700 text-white" onClick={() => router.push("/admin/dashboard")}>
+                Go to Admin Panel
+              </Button>
+            </div>
+          )}
+
           {/* KYC Alert */}
           {(!kyc || kyc.status !== "APPROVED") && (
             <div className="mb-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 rounded-xl border border-border bg-muted/40 p-5 shadow-sm">

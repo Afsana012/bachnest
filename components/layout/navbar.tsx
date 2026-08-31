@@ -202,6 +202,17 @@ export function Navbar() {
                     <span>Dashboard</span>
                   </Link>
 
+                  {(user.role === "ADMIN" || user.role === "SUPER_ADMIN") && (
+                    <Link
+                      href="/admin/dashboard"
+                      onClick={() => setIsUserMenuOpen(false)}
+                      className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-popover-foreground hover:bg-muted transition-colors"
+                    >
+                      <ShieldAlert className="h-4 w-4 text-emerald-500" />
+                      <span>Admin Panel</span>
+                    </Link>
+                  )}
+
                   {user.role === "OWNER" && (
                     <Link
                       href="/dashboard/properties/new"
