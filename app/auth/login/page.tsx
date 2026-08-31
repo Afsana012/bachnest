@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Building2, LogIn, Lock, Phone } from "lucide-react";
+import { Building2, LogIn, Lock, Phone, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -37,7 +37,16 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-background text-foreground">
+    <div className="min-h-screen flex items-center justify-center p-4 bg-background text-foreground relative">
+      <div className="absolute top-6 left-6">
+        <Button variant="ghost" size="sm" asChild className="rounded-xl text-muted-foreground hover:text-foreground">
+          <Link href="/">
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Home
+          </Link>
+        </Button>
+      </div>
+      
       <Card className="w-full max-w-md rounded-3xl border-border/80 bg-card/80 p-8 shadow-xl backdrop-blur-xl">
         <CardHeader className="p-0 text-center mb-6">
           <Link href="/" className="inline-flex items-center gap-2 mx-auto mb-2 font-bold text-xl">
