@@ -16,6 +16,7 @@ import {
   FileText,
   Wrench,
   CheckCircle2,
+  Home,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
@@ -201,34 +202,18 @@ export function Navbar() {
                     <span>Dashboard</span>
                   </Link>
 
-                  <Link
-                    href="/dashboard?tab=bookings"
-                    onClick={() => setIsUserMenuOpen(false)}
-                    className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-popover-foreground hover:bg-muted transition-colors"
-                  >
-                    <Compass className="h-4 w-4 text-muted-foreground" />
-                    <span>My Bookings</span>
-                  </Link>
+                  {user.role === "OWNER" && (
+                    <Link
+                      href="/dashboard/properties/new"
+                      onClick={() => setIsUserMenuOpen(false)}
+                      className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-popover-foreground hover:bg-muted transition-colors"
+                    >
+                      <Home className="h-4 w-4 text-muted-foreground" />
+                      <span>Post Property</span>
+                    </Link>
+                  )}
 
-                  <Link
-                    href="/dashboard?tab=billing"
-                    onClick={() => setIsUserMenuOpen(false)}
-                    className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-popover-foreground hover:bg-muted transition-colors"
-                  >
-                    <FileText className="h-4 w-4 text-muted-foreground" />
-                    <span>Invoices</span>
-                  </Link>
-
-                  <Link
-                    href="/dashboard?tab=complaints"
-                    onClick={() => setIsUserMenuOpen(false)}
-                    className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-popover-foreground hover:bg-muted transition-colors"
-                  >
-                    <Wrench className="h-4 w-4 text-muted-foreground" />
-                    <span>Complaints</span>
-                  </Link>
-
-                  <div className="my-1 border-t border-border" />
+                  <div className="my-1 h-px bg-border" />
 
                   <button
                     type="button"
