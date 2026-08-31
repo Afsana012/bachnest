@@ -1,4 +1,4 @@
-export type UserRole = "bachelor" | "property_owner" | "admin";
+export type UserRole = "bachelor" | "property_owner" | "admin" | "super_admin";
 export type KYCStatus = "unverified" | "pending" | "verified" | "rejected";
 export type PropertyType = "apartment" | "hostel" | "sublet" | "mess";
 export type GenderPreference = "male_only" | "female_only" | "any";
@@ -6,6 +6,9 @@ export type RoomType = "single" | "shared" | "master";
 export type BookingStatus = "pending_owner" | "approved" | "rejected" | "agreement_signed" | "cancelled" | "completed";
 export type TenancyStatus = "active" | "notice_served" | "terminated" | "expired";
 export type InvoiceStatus = "unpaid" | "partially_paid" | "paid" | "overdue" | "cancelled";
+export type ComplaintCategory = "plumbing" | "electrical" | "wifi" | "noise" | "cleaning" | "security" | "other";
+export type ComplaintStatus = "submitted" | "acknowledged" | "in_progress" | "resolved" | "reopened" | "escalated";
+export type ComplaintSeverity = "low" | "medium" | "high" | "urgent";
 export type AlertSeverity = "low" | "medium" | "high" | "critical";
 
 export interface ApiResponse<T = any> {
@@ -16,6 +19,18 @@ export interface ApiResponse<T = any> {
     code: string;
     message?: string;
     details?: Array<{ field: string; message: string }>;
+  };
+}
+
+export interface PaginatedResponse<T = any> {
+  success: boolean;
+  message?: string;
+  items: T[];
+  meta: {
+    page: number;
+    limit: number;
+    total: number;
+    total_pages: number;
   };
 }
 
@@ -161,6 +176,30 @@ export interface Invoice {
   paid_at?: string;
 }
 
+export interface Complaint {
+  id: string;
+  tenancy_id: string;
+  tenant_id: string;
+  property_id: string;
+  title: string;
+  description: string;
+  category: ComplaintCategory;
+  severity: ComplaintSeverity;
+  status: ComplaintStatus;
+  sla_deadline: string;
+  resolved_at?: string;
+  created_at: string;
+}
+
+export interface Notice {
+  id: string;
+  property_id: string;
+  title: string;
+  content: string;
+  is_urgent: boolean;
+  created_at: string;
+}
+
 export interface EmergencyAlert {
   id: string;
   user_id: string;
@@ -172,4 +211,11 @@ export interface EmergencyAlert {
   longitude?: number;
   is_resolved: boolean;
   created_at: string;
+}
+
+export interface CompatibilityResult {
+  candidate_id: string;
+  candidate_name: string;
+  compatibility_score: number;
+  shared_interests: string[];
 }

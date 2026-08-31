@@ -1,12 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { ShieldAlert, PhoneCall, Radio, CheckCircle2, AlertTriangle, Users } from "lucide-react";
+import { ShieldAlert, PhoneCall, Radio, Users } from "lucide-react";
 import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
 import { useSosWebSocket } from "@/hooks/use-sos-websocket";
 import { fetchApi } from "@/lib/api";
 
@@ -17,17 +15,19 @@ export default function EmergencyPage() {
 
   const handleSos = async () => {
     setLoading(true);
-    const res = await fetchApi("/emergency/sos", {
+    const res = await fetchApi("/emergency/trigger-sos", {
       method: "POST",
       body: JSON.stringify({
         title: "EMERGENCY SOS ALERT",
-        description: "Emergency assistance requested at current location.",
+        description: "Emergency assistance requested at current residence location.",
         severity: "critical",
       }),
     });
     setLoading(false);
     if (res.success) {
       setTriggered(true);
+    } else {
+      alert(res.message || "Failed to trigger emergency SOS");
     }
   };
 
@@ -47,7 +47,6 @@ export default function EmergencyPage() {
             </p>
           </div>
 
-          {/* SOS Trigger Card */}
           <Card className="rounded-3xl border-destructive/30 bg-gradient-to-b from-destructive/5 to-card p-8 text-center mb-10">
             <CardContent className="p-0 flex flex-col items-center">
               <button
@@ -71,7 +70,6 @@ export default function EmergencyPage() {
             </CardContent>
           </Card>
 
-          {/* Hotlines */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <Card className="rounded-2xl p-4 text-center">
               <PhoneCall className="h-5 w-5 text-primary mx-auto mb-2" />
