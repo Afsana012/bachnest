@@ -1,10 +1,10 @@
 "use client";
 
 import * as React from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  Building2,
   ChevronDown,
   Menu,
   X,
@@ -13,13 +13,11 @@ import {
   ShieldAlert,
   Plus,
   Compass,
-  Users,
   FileText,
   Wrench,
   CheckCircle2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/use-auth";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 
@@ -68,8 +66,15 @@ export function Navbar() {
         
         <div className="flex items-center gap-8">
           <Link href="/" className="flex items-center gap-2.5 font-bold tracking-tight text-lg">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-              <Building2 className="h-5 w-5" />
+            <div className="relative flex h-9 w-9 items-center justify-center rounded-xl overflow-hidden border border-border/80 bg-background shadow-xs">
+              <Image
+                src="/logo.png"
+                alt="BachNest Logo"
+                width={36}
+                height={36}
+                className="object-cover rounded-xl"
+                priority
+              />
             </div>
             <span className="font-semibold text-foreground">BachNest</span>
           </Link>
