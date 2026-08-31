@@ -1,17 +1,40 @@
-export type UserRole = "bachelor" | "property_owner" | "admin" | "super_admin";
+export type UserRole = "BACHELOR" | "OWNER" | "ADMIN" | "SUPER_ADMIN";
+export type Gender = "MALE" | "FEMALE" | "OTHER";
 export type KYCStatus = "UNVERIFIED" | "PENDING" | "APPROVED" | "REJECTED";
-export type PropertyType = "apartment" | "hostel" | "sublet" | "mess";
-export type GenderPreference = "male_only" | "female_only" | "any";
-export type RoomType = "single" | "shared" | "master";
-export type BookingStatus = "pending_owner" | "approved" | "rejected" | "agreement_signed" | "cancelled" | "completed";
-export type TenancyStatus = "active" | "notice_served" | "terminated" | "expired";
-export type InvoiceStatus = "unpaid" | "partially_paid" | "paid" | "overdue" | "cancelled";
-export type ComplaintCategory = "plumbing" | "electrical" | "wifi" | "noise" | "cleaning" | "security" | "other";
-export type ComplaintStatus = "submitted" | "acknowledged" | "in_progress" | "resolved" | "reopened" | "escalated";
-export type ComplaintSeverity = "low" | "medium" | "high" | "urgent";
-export type AlertSeverity = "low" | "medium" | "high" | "critical";
+export type KYCDocumentType = "NID" | "PASSPORT" | "BIRTH_CERTIFICATE" | "STUDENT_ID" | "EMPLOYEE_ID";
+export type PropertyType = "FLAT" | "SUBLET" | "MESS" | "HOSTEL";
+export type RoomType = "SINGLE" | "MASTER" | "SHARED";
+export type BookingStatus =
+  | "REQUESTED"
+  | "APPROVED_BY_OWNER"
+  | "REJECTED"
+  | "DEPOSIT_PAID"
+  | "ACTIVE"
+  | "COMPLETED"
+  | "CANCELLED";
+export type TenancyStatus = "ACTIVE" | "NOTICE_SERVED" | "TERMINATED" | "EVICTED";
+export type AgreementStatus = "DRAFT" | "PENDING_SIGNATURE" | "SIGNED" | "EXPIRED";
+export type InvoiceStatus = "DRAFT" | "ISSUED" | "PARTIALLY_PAID" | "PAID" | "OVERDUE" | "CANCELLED";
+export type PaymentStatus = "PENDING" | "COMPLETED" | "FAILED" | "REFUNDED";
+export type PaymentMethod = "MOCK" | "BKASH" | "NAGAD" | "ROCKET" | "SSLCOMMERZ" | "BANK_TRANSFER" | "CASH";
+export type ComplaintCategory =
+  | "PLUMBING"
+  | "ELECTRICAL"
+  | "APPLIANCE"
+  | "STRUCTURAL"
+  | "INTERNET"
+  | "SECURITY"
+  | "NOISE"
+  | "CLEANLINESS"
+  | "OTHER";
+export type ComplaintPriority = "LOW" | "MEDIUM" | "HIGH" | "EMERGENCY";
+export type ComplaintStatus = "OPEN" | "ACKNOWLEDGED" | "IN_PROGRESS" | "RESOLVED" | "CLOSED" | "REOPENED";
+export type NoticePriority = "LOW" | "NORMAL" | "HIGH" | "URGENT";
+export type EmergencyType = "SECURITY_INTRUDER" | "MEDICAL" | "FIRE" | "HARASSMENT" | "ACCIDENT" | "OTHER";
 
-export interface ApiResponse<T = any> {
+export type Money = number | string;
+
+export interface ApiResponse<T = unknown> {
   success: boolean;
   message?: string;
   data: T;
@@ -22,7 +45,7 @@ export interface ApiResponse<T = any> {
   };
 }
 
-export interface PaginatedResponse<T = any> {
+export interface PaginatedApiResponse<T = unknown> {
   success: boolean;
   message?: string;
   items: T[];
@@ -34,13 +57,20 @@ export interface PaginatedResponse<T = any> {
   };
 }
 
+export interface TokenPair {
+  access_token: string;
+  refresh_token: string;
+  token_type: string;
+  expires_in: number;
+}
+
 export interface User {
   id: string;
   email: string;
   phone: string;
   full_name: string;
-  role: string;
-  gender: string;
+  role: UserRole;
+  gender: Gender;
   is_active: boolean;
   is_phone_verified: boolean;
   is_email_verified: boolean;
@@ -53,45 +83,66 @@ export interface User {
   created_at: string;
 }
 
-export interface UserKYC {
+export interface UserUpdate {
+  full_name?: string;
+  avatar_url?: string;
+  bio?: string;
+  occupation?: string;
+  institution_or_company?: string;
+  gender?: Gender;
+}
+
+export interface KycSubmission {
+  document_type: KYCDocumentType;
+  document_number: string;
+  front_document_url: string;
+  back_document_url?: string;
+  student_or_work_id_url?: string;
+}
+
+export interface KYCOut {
   id: string;
   user_id: string;
-  nid_number?: string;
-  passport_number?: string;
-  student_or_job_id?: string;
-  institution_name?: string;
   status: KYCStatus;
+  document_type: KYCDocumentType;
+  document_number: string;
+  front_document_url: string;
+  back_document_url?: string;
+  student_or_work_id_url?: string;
   rejection_reason?: string;
-  submitted_at?: string;
   verified_at?: string;
+  created_at: string;
 }
 
 export interface PropertyMedia {
   id: string;
   media_url: string;
-  media_type: "image" | "video" | "document";
-  is_primary: boolean;
+  media_type: string;
   caption?: string;
+  is_cover: boolean;
+  display_order: number;
 }
 
 export interface RoomSeat {
   id: string;
   room_id: string;
-  seat_label: string;
-  seat_rent: number;
-  is_available: boolean;
+  seat_identifier: string;
+  monthly_rent: Money;
   is_occupied: boolean;
 }
 
 export interface Room {
   id: string;
   property_id: string;
-  room_label: string;
+  room_number_or_name: string;
   room_type: RoomType;
-  base_rent: number;
-  attached_bath: boolean;
-  balcony: boolean;
-  max_occupancy: number;
+  monthly_rent: Money;
+  security_deposit: Money;
+  has_attached_bathroom: boolean;
+  has_balcony: boolean;
+  has_ac: boolean;
+  is_furnished: boolean;
+  total_capacity: number;
   current_occupancy: number;
   is_available: boolean;
   seats?: RoomSeat[];
@@ -104,48 +155,87 @@ export interface Property {
   description: string;
   property_type: PropertyType;
   address_line: string;
-  area: string;
+  area_neighborhood: string;
   city: string;
   postal_code?: string;
   latitude: number;
   longitude: number;
-  total_bedrooms: number;
-  total_bathrooms: number;
-  gender_preference: GenderPreference;
-  base_rent: number;
-  advance_deposit_months: number;
-  service_charge: number;
-  gas_bill_included: boolean;
-  water_bill_included: boolean;
-  electricity_billing_type: "prepaid" | "postpaid" | "split";
-  wifi_included: boolean;
-  lift_available: boolean;
-  generator_backup: boolean;
-  cctv_security: boolean;
-  meal_system_available: boolean;
-  is_verified: boolean;
-  is_active: boolean;
+  total_floors?: number;
+  floor_number?: number;
+  flat_number?: string;
+  has_lift: boolean;
+  has_generator: boolean;
+  has_cctv: boolean;
+  has_wifi: boolean;
+  gate_closing_time?: string;
+  visitor_policy?: string;
+  is_published: boolean;
+  is_verified_by_admin: boolean;
   created_at: string;
-  media?: PropertyMedia[];
-  rooms?: Room[];
+  rooms: Room[];
+  media: PropertyMedia[];
+}
+
+export interface PropertyCreate {
+  title: string;
+  description: string;
+  property_type: PropertyType;
+  address_line: string;
+  area_neighborhood: string;
+  city: string;
+  postal_code?: string;
+  latitude: number;
+  longitude: number;
+  total_floors?: number;
+  floor_number?: number;
+  flat_number?: string;
+  has_lift: boolean;
+  has_generator: boolean;
+  has_cctv: boolean;
+  has_wifi: boolean;
+  gate_closing_time?: string;
+  visitor_policy?: string;
+}
+
+export interface RoomCreate {
+  room_number_or_name: string;
+  room_type: RoomType;
+  monthly_rent: Money;
+  security_deposit?: Money;
+  has_attached_bathroom?: boolean;
+  has_balcony?: boolean;
+  has_ac?: boolean;
+  is_furnished?: boolean;
+  total_capacity?: number;
+}
+
+export interface SearchPropertyItem {
+  property_id: string;
+  title: string;
+  property_type: PropertyType;
+  area: string;
+  city: string;
+  latitude: number;
+  longitude: number;
+  starting_rent: Money;
+  available_rooms: number;
+  tags: string[];
+  distance_km?: number;
+  cover_image_url?: string;
 }
 
 export interface Booking {
   id: string;
   tenant_id: string;
   property_id: string;
-  room_id?: string;
+  room_id: string;
   seat_id?: string;
-  status: BookingStatus;
-  move_in_date: string;
-  monthly_rent: number;
-  advance_deposit: number;
-  service_fee: number;
-  total_initial_payable: number;
-  special_requests?: string;
+  booking_status: BookingStatus;
+  requested_move_in_date: string;
+  token_deposit_amount: Money;
+  owner_remarks?: string;
+  cancellation_reason?: string;
   created_at: string;
-  property?: Property;
-  room?: Room;
 }
 
 export interface Tenancy {
@@ -156,16 +246,15 @@ export interface Tenancy {
   property_id: string;
   room_id: string;
   seat_id?: string;
-  agreed_monthly_rent: number;
-  agreed_security_deposit: number;
+  agreed_monthly_rent: Money;
+  agreed_security_deposit: Money;
   lease_start_date: string;
   lease_end_date?: string;
   notice_period_days: number;
-  status: string;
-  agreement_status: string;
+  status: TenancyStatus;
+  agreement_status: AgreementStatus;
   digital_agreement_url?: string;
   created_at: string;
-  property_title?: string;
 }
 
 export interface Invoice {
@@ -174,18 +263,37 @@ export interface Invoice {
   tenancy_id: string;
   tenant_id: string;
   billing_month_year: string;
-  base_rent: number;
-  service_charge: number;
-  electricity_bill: number;
-  water_bill: number;
-  gas_bill: number;
-  internet_bill: number;
-  other_adjustments: number;
-  late_fee: number;
-  total_amount: number;
-  paid_amount: number;
+  base_rent: Money;
+  service_charge: Money;
+  electricity_bill: Money;
+  water_bill: Money;
+  gas_bill: Money;
+  internet_bill: Money;
+  other_adjustments: Money;
+  late_fee: Money;
+  total_amount: Money;
+  paid_amount: Money;
   due_date: string;
-  status: string;
+  status: InvoiceStatus;
+  created_at: string;
+}
+
+export interface CheckoutResponse {
+  payment_id: string;
+  transaction_reference: string;
+  amount: Money;
+  payment_url?: string;
+}
+
+export interface Payment {
+  id: string;
+  invoice_id: string;
+  tenant_id: string;
+  transaction_reference: string;
+  amount: Money;
+  payment_method: PaymentMethod;
+  status: PaymentStatus;
+  paid_at?: string;
   created_at: string;
 }
 
@@ -197,12 +305,12 @@ export interface Complaint {
   tenant_id: string;
   title: string;
   description: string;
-  category: string;
-  priority: string;
-  status: string;
+  category: ComplaintCategory;
+  priority: ComplaintPriority;
+  status: ComplaintStatus;
   sla_deadline: string;
   evidence_urls?: string[];
-  repair_cost?: number;
+  repair_cost?: Money;
   cost_bearer?: string;
   resolution_notes?: string;
   resolved_at?: string;
@@ -212,9 +320,23 @@ export interface Complaint {
 export interface Notice {
   id: string;
   property_id: string;
+  owner_id: string;
   title: string;
   content: string;
-  is_urgent: boolean;
+  priority: NoticePriority;
+  is_active: boolean;
+  is_read: boolean;
+  created_at: string;
+}
+
+export interface Review {
+  id: string;
+  tenancy_id: string;
+  reviewer_id: string;
+  reviewee_id: string;
+  rating: number;
+  comment?: string;
+  is_public: boolean;
   created_at: string;
 }
 
@@ -222,34 +344,20 @@ export interface EmergencyAlert {
   id: string;
   user_id: string;
   property_id?: string;
-  title: string;
-  description: string;
-  severity: AlertSeverity;
-  latitude?: number;
-  longitude?: number;
-  is_resolved: boolean;
+  alert_type: EmergencyType;
+  emergency_message?: string;
+  latitude: number;
+  longitude: number;
+  is_active: boolean;
+  resolved_at?: string;
   created_at: string;
 }
 
 export interface CompatibilityResult {
-  candidate_id: string;
+  candidate_user_id: string;
   candidate_name: string;
   compatibility_score: number;
-  shared_interests: string[];
-}
-
-export interface KYCOut {
-  id: string;
-  user_id: string;
-  status: KYCStatus;
-  document_type: string;
-  document_number: string;
-  front_document_url: string;
-  back_document_url?: string;
-  student_or_work_id_url?: string;
-  rejection_reason?: string;
-  verified_at?: string;
-  created_at: string;
+  matched_factors: string[];
 }
 
 export interface AdminDashboardStats {
@@ -258,4 +366,14 @@ export interface AdminDashboardStats {
   active_tenancies: number;
   open_complaints: number;
   active_sos: number;
+}
+
+export interface AuditLog {
+  id: string;
+  actor_id?: string;
+  action_type: string;
+  entity_name: string;
+  entity_id?: string;
+  ip_address?: string;
+  created_at: string;
 }

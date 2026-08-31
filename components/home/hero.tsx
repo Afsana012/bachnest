@@ -15,10 +15,8 @@ export function HeroSection() {
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    const params = new URLSearchParams();
-    if (query.trim()) params.set("q", query.trim());
-    if (area) params.set("area", area);
-    router.push(`/properties?${params.toString()}`);
+    const term = query.trim() || area;
+    router.push(term ? `/properties?area=${encodeURIComponent(term)}` : "/properties");
   };
 
   return (

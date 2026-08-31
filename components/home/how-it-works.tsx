@@ -54,7 +54,7 @@ export function HowItWorks() {
             </h2>
 
             <div className="mt-10 flex flex-col gap-8">
-              {steps.map((s, idx) => {
+              {steps.map((s) => {
                 const Icon = s.icon;
                 return (
                   <div key={s.step} className="flex gap-5 group">

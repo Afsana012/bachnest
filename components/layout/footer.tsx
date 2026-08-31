@@ -33,8 +33,8 @@ export function Footer() {
             <h4 className="text-sm font-semibold tracking-wider text-foreground uppercase">Platform</h4>
             <ul className="mt-4 space-y-2.5 text-sm text-muted-foreground">
               <li><Link href="/properties" className="transition-colors hover:text-foreground">Browse Properties</Link></li>
-              <li><Link href="/properties?gender=male_only" className="transition-colors hover:text-foreground">Bachelor Messes</Link></li>
-              <li><Link href="/properties?gender=female_only" className="transition-colors hover:text-foreground">Female Hostels</Link></li>
+              <li><Link href="/properties?type=MESS" className="transition-colors hover:text-foreground">Bachelor Messes</Link></li>
+              <li><Link href="/properties?type=HOSTEL" className="transition-colors hover:text-foreground">Hostels</Link></li>
               <li><Link href="/emergency" className="transition-colors hover:text-foreground">Emergency SOS Hub</Link></li>
             </ul>
           </div>

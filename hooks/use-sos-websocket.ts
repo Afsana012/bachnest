@@ -23,7 +23,7 @@ export function useSosWebSocket(userId: string = "guest") {
         if (payload.type === "EMERGENCY_ALERT") {
           setAlerts((prev) => [payload.data, ...prev]);
         }
-      } catch (e) {
+      } catch {
         // Non-JSON ping/pong or system notice
       }
     };

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Users,
@@ -11,6 +11,7 @@ import {
   CheckCircle2,
   XCircle,
   Eye,
+  ScrollText,
 } from "lucide-react";
 import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
@@ -19,31 +20,22 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/use-auth";
 import { fetchApi } from "@/lib/api";
-import { AdminDashboardStats, KYCOut, Property, User } from "@/lib/types";
+import { AdminDashboardStats, AuditLog, KYCOut, Property, User } from "@/lib/types";
+import { formatDate } from "@/lib/format";
 
 export default function AdminDashboardPage() {
   const router = useRouter();
   const { user, isAuthenticated, loading } = useAuth();
-  const [activeTab, setActiveTab] = useState<"overview" | "kyc" | "properties" | "users">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "kyc" | "properties" | "users" | "audit">("overview");
 
   const [stats, setStats] = useState<AdminDashboardStats | null>(null);
   const [kycQueue, setKycQueue] = useState<KYCOut[]>([]);
   const [pendingProperties, setPendingProperties] = useState<Property[]>([]);
   const [usersList, setUsersList] = useState<User[]>([]);
+  const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
   const [dataLoading, setDataLoading] = useState(false);
 
-  useEffect(() => {
-    if (!loading && (!isAuthenticated || (user?.role !== "ADMIN" && user?.role !== "SUPER_ADMIN"))) {
-      router.push("/dashboard");
-      return;
-    }
-
-    if (isAuthenticated) {
-      loadData();
-    }
-  }, [isAuthenticated, loading, activeTab]);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     setDataLoading(true);
     if (activeTab === "overview") {
       const res = await fetchApi<AdminDashboardStats>("/admin/dashboard");
@@ -57,9 +49,24 @@ export default function AdminDashboardPage() {
     } else if (activeTab === "users") {
       const res = await fetchApi<User[]>("/admin/users");
       if (res.success && res.data) setUsersList(res.data);
+    } else if (activeTab === "audit") {
+      const res = await fetchApi<AuditLog[]>("/admin/audit-logs");
+      if (res.success && res.data) setAuditLogs(res.data);
     }
     setDataLoading(false);
-  };
+  }, [activeTab]);
+
+  useEffect(() => {
+    if (!loading && (!isAuthenticated || (user?.role !== "ADMIN" && user?.role !== "SUPER_ADMIN"))) {
+      router.push("/dashboard");
+      return;
+    }
+
+    if (isAuthenticated) {
+      const t = setTimeout(loadData, 0);
+      return () => clearTimeout(t);
+    }
+  }, [isAuthenticated, loading, activeTab, router, user?.role, loadData]);
 
   const handleKycDecision = async (kycId: string, decision: "APPROVED" | "REJECTED") => {
     const res = await fetchApi(`/admin/kyc/${kycId}/decision`, {
@@ -74,14 +81,24 @@ export default function AdminDashboardPage() {
   };
 
   const handleVerifyProperty = async (propertyId: string) => {
-    const res = await fetchApi(`/admin/properties/${propertyId}/verify`, {
+    const res = await fetchApi(`/admin/properties/${propertyId}/verify?is_verified=true`, {
       method: "PATCH",
-      body: JSON.stringify({ is_verified_by_admin: true }),
     });
     if (res.success) {
       setPendingProperties(pendingProperties.filter((p) => p.id !== propertyId));
     } else {
       alert(res.message || "Failed to verify property");
+    }
+  };
+
+  const handleToggleUserStatus = async (userId: string, isActive: boolean) => {
+    const res = await fetchApi(`/admin/users/${userId}/status?is_active=${!isActive}`, {
+      method: "PATCH",
+    });
+    if (res.success) {
+      setUsersList(usersList.map((u) => (u.id === userId ? { ...u, is_active: !isActive } : u)));
+    } else {
+      alert(res.message || "Failed to update user status");
     }
   };
 
@@ -141,6 +158,15 @@ export default function AdminDashboardPage() {
                 >
                   <Users className="h-4 w-4" />
                   User Management
+                </button>
+                <button
+                  onClick={() => setActiveTab("audit")}
+                  className={`flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-xl transition-colors ${
+                    activeTab === "audit" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:bg-muted"
+                  }`}
+                >
+                  <ScrollText className="h-4 w-4" />
+                  Audit Logs
                 </button>
               </nav>
             </div>
@@ -251,7 +277,7 @@ export default function AdminDashboardPage() {
                           <div key={prop.id} className="bg-card rounded-2xl border border-border/60 p-5 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
                             <div>
                               <p className="text-sm font-semibold text-foreground">{prop.title}</p>
-                              <p className="text-xs text-muted-foreground mt-0.5">{prop.address_line}, {prop.area}</p>
+                              <p className="text-xs text-muted-foreground mt-0.5">{prop.address_line}, {prop.area_neighborhood}, {prop.city}</p>
                               <Badge variant="secondary" className="mt-2 text-[10px] uppercase">
                                 {prop.property_type}
                               </Badge>
@@ -282,6 +308,7 @@ export default function AdminDashboardPage() {
                               <th className="px-4 py-3 font-medium">Contact</th>
                               <th className="px-4 py-3 font-medium">Role</th>
                               <th className="px-4 py-3 font-medium">KYC</th>
+                              <th className="px-4 py-3 font-medium">Status</th>
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-border/60">
@@ -299,12 +326,66 @@ export default function AdminDashboardPage() {
                                     <span className="text-amber-500 font-medium text-xs">Pending</span>
                                   )}
                                 </td>
+                                <td className="px-4 py-3">
+                                  {u.id === user?.id ? (
+                                    <span className="text-muted-foreground text-xs">You</span>
+                                  ) : (
+                                    <button
+                                      onClick={() => handleToggleUserStatus(u.id, u.is_active)}
+                                      className={`text-xs font-medium px-2.5 py-1 rounded-full transition-colors ${
+                                        u.is_active
+                                          ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20"
+                                          : "bg-destructive/10 text-destructive hover:bg-destructive/20"
+                                      }`}
+                                    >
+                                      {u.is_active ? "Active" : "Disabled"}
+                                    </button>
+                                  )}
+                                </td>
                               </tr>
                             ))}
                           </tbody>
                         </table>
                         {usersList.length === 0 && (
                           <div className="text-center py-8 text-muted-foreground text-sm">No users found.</div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {activeTab === "audit" && (
+                    <div className="space-y-4">
+                      <h2 className="text-xl font-bold mb-4">Audit Logs</h2>
+                      <div className="bg-card rounded-2xl border border-border/60 shadow-sm overflow-x-auto">
+                        <table className="w-full text-sm text-left min-w-[640px]">
+                          <thead className="bg-muted/50 text-muted-foreground text-xs uppercase">
+                            <tr>
+                              <th className="px-4 py-3 font-medium">Action</th>
+                              <th className="px-4 py-3 font-medium">Entity</th>
+                              <th className="px-4 py-3 font-medium">Actor</th>
+                              <th className="px-4 py-3 font-medium">IP</th>
+                              <th className="px-4 py-3 font-medium">Time</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-border/60">
+                            {auditLogs.map((log) => (
+                              <tr key={log.id} className="hover:bg-muted/20 transition-colors">
+                                <td className="px-4 py-3 font-medium text-foreground">{log.action_type}</td>
+                                <td className="px-4 py-3 text-muted-foreground">
+                                  {log.entity_name}
+                                  {log.entity_id ? ` #${log.entity_id.slice(0, 8)}` : ""}
+                                </td>
+                                <td className="px-4 py-3 text-muted-foreground">
+                                  {log.actor_id ? `#${log.actor_id.slice(0, 8)}` : "system"}
+                                </td>
+                                <td className="px-4 py-3 text-muted-foreground font-mono text-xs">{log.ip_address || "—"}</td>
+                                <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">{formatDate(log.created_at)}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                        {auditLogs.length === 0 && (
+                          <div className="text-center py-8 text-muted-foreground text-sm">No audit entries yet.</div>
                         )}
                       </div>
                     </div>
