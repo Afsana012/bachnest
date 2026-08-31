@@ -118,7 +118,7 @@ export default function DashboardPage() {
                   </p>
                 </div>
               </div>
-              <Button size="sm" variant="outline" className="shrink-0 bg-background hover:bg-muted">
+              <Button size="sm" variant="outline" className="shrink-0 bg-background hover:bg-muted" onClick={() => router.push("/dashboard/kyc")}>
                 Complete KYC
               </Button>
             </div>
@@ -153,7 +153,7 @@ export default function DashboardPage() {
                   </div>
                   <div className="flex justify-between items-center py-2">
                     <span className="text-muted-foreground">Trust Score</span>
-                    <span className="font-medium">{user?.trust_score ?? "New"} / 5.0</span>
+                    <span className="font-medium">{user?.trust_score ?? "New"} / 100</span>
                   </div>
                 </div>
               </div>
