@@ -50,7 +50,7 @@ function RegisterForm() {
 
     const loginRes = await fetchApi<TokenPair>("/auth/login", {
       method: "POST",
-      body: JSON.stringify({ identifier: phone, password }),
+      body: JSON.stringify({ identifier: email, password }),
     });
 
     setLoading(false);
