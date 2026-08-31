@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { UserCircle, CheckCircle2, Mail, Phone, Save } from "lucide-react";
+import { UserCircle, Save } from "lucide-react";
 import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
 import { Button } from "@/components/ui/button";
@@ -22,11 +22,6 @@ export default function ProfilePage() {
   const [avatarUrl, setAvatarUrl] = useState<string | undefined>();
   const [saving, setSaving] = useState(false);
   const [savedMessage, setSavedMessage] = useState("");
-
-  const [otp, setOtp] = useState("");
-  const [emailCode, setEmailCode] = useState("");
-  const [verifyingPhone, setVerifyingPhone] = useState(false);
-  const [verifyingEmail, setVerifyingEmail] = useState(false);
   const [syncedFor, setSyncedFor] = useState<string | null>(null);
 
   useEffect(() => {
@@ -76,38 +71,6 @@ export default function ProfilePage() {
     }
   };
 
-  const verifyPhone = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setVerifyingPhone(true);
-    const res = await fetchApi("/auth/verify-phone", {
-      method: "POST",
-      body: JSON.stringify({ otp }),
-    });
-    setVerifyingPhone(false);
-    if (res.success) {
-      setOtp("");
-      window.location.reload();
-    } else {
-      alert(res.message || "Invalid OTP");
-    }
-  };
-
-  const verifyEmail = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setVerifyingEmail(true);
-    const res = await fetchApi("/auth/verify-email", {
-      method: "POST",
-      body: JSON.stringify({ token_or_code: emailCode }),
-    });
-    setVerifyingEmail(false);
-    if (res.success) {
-      setEmailCode("");
-      window.location.reload();
-    } else {
-      alert(res.message || "Invalid verification code");
-    }
-  };
-
   if (loading || !user) return null;
 
   return (
@@ -120,7 +83,7 @@ export default function ProfilePage() {
             A complete profile builds trust with landlords and future roommates.
           </p>
 
-          <form onSubmit={saveProfile} className="rounded-2xl border border-border bg-card p-6 shadow-sm space-y-5 mb-8">
+          <form onSubmit={saveProfile} className="rounded-2xl border border-border bg-card p-6 shadow-sm space-y-5">
             <div className="flex items-center gap-4">
               <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center text-muted-foreground overflow-hidden shrink-0">
                 {avatarUrl ? (
@@ -185,57 +148,6 @@ export default function ProfilePage() {
               {savedMessage && <span className="text-sm text-emerald-600 dark:text-emerald-400">{savedMessage}</span>}
             </div>
           </form>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-            <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
-              <h3 className="text-sm font-semibold flex items-center gap-2 mb-3">
-                <Phone className="h-4 w-4 text-muted-foreground" /> Phone Verification
-              </h3>
-              {user.is_phone_verified ? (
-                <p className="text-sm text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
-                  <CheckCircle2 className="h-4 w-4" /> {user.phone} is verified
-                </p>
-              ) : (
-                <form onSubmit={verifyPhone} className="space-y-3">
-                  <p className="text-xs text-muted-foreground">{user.phone} is not verified yet.</p>
-                  <Input
-                    placeholder="Enter SMS OTP"
-                    value={otp}
-                    onChange={(e) => setOtp(e.target.value)}
-                    inputMode="numeric"
-                    required
-                  />
-                  <Button type="submit" size="sm" variant="outline" disabled={verifyingPhone}>
-                    {verifyingPhone ? "Verifying..." : "Verify Phone"}
-                  </Button>
-                </form>
-              )}
-            </div>
-
-            <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
-              <h3 className="text-sm font-semibold flex items-center gap-2 mb-3">
-                <Mail className="h-4 w-4 text-muted-foreground" /> Email Verification
-              </h3>
-              {user.is_email_verified ? (
-                <p className="text-sm text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
-                  <CheckCircle2 className="h-4 w-4" /> {user.email} is verified
-                </p>
-              ) : (
-                <form onSubmit={verifyEmail} className="space-y-3">
-                  <p className="text-xs text-muted-foreground">{user.email} is not verified yet.</p>
-                  <Input
-                    placeholder="Enter verification code"
-                    value={emailCode}
-                    onChange={(e) => setEmailCode(e.target.value)}
-                    required
-                  />
-                  <Button type="submit" size="sm" variant="outline" disabled={verifyingEmail}>
-                    {verifyingEmail ? "Verifying..." : "Verify Email"}
-                  </Button>
-                </form>
-              )}
-            </div>
-          </div>
         </div>
       </main>
       <Footer />
