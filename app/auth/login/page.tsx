@@ -23,7 +23,7 @@ export default function LoginPage() {
 
     const res = await fetchApi<{ access_token: string; refresh_token: string }>("/auth/login", {
       method: "POST",
-      body: JSON.stringify({ phone, password }),
+      body: JSON.stringify({ identifier: phone, password }),
     });
 
     setLoading(false);

@@ -1,5 +1,5 @@
 export type UserRole = "bachelor" | "property_owner" | "admin" | "super_admin";
-export type KYCStatus = "unverified" | "pending" | "verified" | "rejected";
+export type KYCStatus = "UNVERIFIED" | "PENDING" | "APPROVED" | "REJECTED";
 export type PropertyType = "apartment" | "hostel" | "sublet" | "mess";
 export type GenderPreference = "male_only" | "female_only" | "any";
 export type RoomType = "single" | "shared" | "master";
@@ -38,12 +38,18 @@ export interface User {
   id: string;
   email: string;
   phone: string;
-  first_name: string;
-  last_name: string;
-  role: UserRole;
+  full_name: string;
+  role: string;
+  gender: string;
   is_active: boolean;
-  is_verified: boolean;
+  is_phone_verified: boolean;
+  is_email_verified: boolean;
+  is_kyc_verified: boolean;
   avatar_url?: string;
+  bio?: string;
+  occupation?: string;
+  institution_or_company?: string;
+  trust_score: number;
   created_at: string;
 }
 
@@ -144,49 +150,61 @@ export interface Booking {
 
 export interface Tenancy {
   id: string;
-  booking_id: string;
+  booking_id?: string;
   tenant_id: string;
+  owner_id: string;
   property_id: string;
-  room_id?: string;
+  room_id: string;
   seat_id?: string;
-  start_date: string;
-  end_date?: string;
-  monthly_rent: number;
-  advance_deposit_held: number;
-  status: TenancyStatus;
-  notice_served_at?: string;
-  notice_effective_date?: string;
-  property?: Property;
+  agreed_monthly_rent: number;
+  agreed_security_deposit: number;
+  lease_start_date: string;
+  lease_end_date?: string;
+  notice_period_days: number;
+  status: string;
+  agreement_status: string;
+  digital_agreement_url?: string;
+  created_at: string;
+  property_title?: string;
 }
 
 export interface Invoice {
   id: string;
-  tenancy_id: string;
   invoice_number: string;
-  billing_month: number;
-  billing_year: number;
-  rent_amount: number;
+  tenancy_id: string;
+  tenant_id: string;
+  billing_month_year: string;
+  base_rent: number;
   service_charge: number;
-  utility_bill: number;
-  penalty_fee: number;
+  electricity_bill: number;
+  water_bill: number;
+  gas_bill: number;
+  internet_bill: number;
+  other_adjustments: number;
+  late_fee: number;
   total_amount: number;
-  amount_paid: number;
-  status: InvoiceStatus;
+  paid_amount: number;
   due_date: string;
-  paid_at?: string;
+  status: string;
+  created_at: string;
 }
 
 export interface Complaint {
   id: string;
-  tenancy_id: string;
-  tenant_id: string;
   property_id: string;
+  room_id?: string;
+  tenancy_id?: string;
+  tenant_id: string;
   title: string;
   description: string;
-  category: ComplaintCategory;
-  severity: ComplaintSeverity;
-  status: ComplaintStatus;
+  category: string;
+  priority: string;
+  status: string;
   sla_deadline: string;
+  evidence_urls?: string[];
+  repair_cost?: number;
+  cost_bearer?: string;
+  resolution_notes?: string;
   resolved_at?: string;
   created_at: string;
 }

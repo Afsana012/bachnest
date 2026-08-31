@@ -33,12 +33,11 @@ export default function RegisterPage() {
     const res = await fetchApi<{ access_token: string; refresh_token: string }>("/auth/register", {
       method: "POST",
       body: JSON.stringify({
-        first_name: firstName,
-        last_name: lastName,
+        full_name: `${firstName} ${lastName}`.trim(),
         phone,
         email,
         password,
-        role,
+        role: role === "property_owner" ? "OWNER" : "BACHELOR",
       }),
     });
 
