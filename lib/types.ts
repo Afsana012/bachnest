@@ -237,3 +237,25 @@ export interface CompatibilityResult {
   compatibility_score: number;
   shared_interests: string[];
 }
+
+export interface KYCOut {
+  id: string;
+  user_id: string;
+  status: KYCStatus;
+  document_type: string;
+  document_number: string;
+  front_document_url: string;
+  back_document_url?: string;
+  student_or_work_id_url?: string;
+  rejection_reason?: string;
+  verified_at?: string;
+  created_at: string;
+}
+
+export interface AdminDashboardStats {
+  total_users: number;
+  verified_properties: number;
+  active_tenancies: number;
+  open_complaints: number;
+  active_sos: number;
+}
