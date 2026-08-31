@@ -2,25 +2,30 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Home, ArrowLeft, Plus } from "lucide-react";
+import { Home, ArrowLeft, Plus, X } from "lucide-react";
 import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/hooks/use-auth";
-import { fetchApi } from "@/lib/api";
+import { fetchApi, uploadFile } from "@/lib/api";
+import { Property } from "@/lib/types";
 
 export default function PostPropertyPage() {
   const router = useRouter();
   const { isAuthenticated, user, loading } = useAuth();
-  
+
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [propertyType, setPropertyType] = useState("FLAT");
   const [addressLine, setAddressLine] = useState("");
   const [area, setArea] = useState("");
+  const [rent, setRent] = useState("");
+  const [files, setFiles] = useState<File[]>([]);
+  const [previews, setPreviews] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [error, setError] = useState("");
 
   if (loading) return null;
   if (!isAuthenticated || user?.role !== "OWNER") {
@@ -35,12 +40,25 @@ export default function PostPropertyPage() {
     );
   }
 
+  const handleFiles = (selected: FileList | null) => {
+    if (!selected) return;
+    const next = [...files, ...Array.from(selected)].slice(0, 8);
+    setFiles(next);
+    setPreviews(next.map((file) => URL.createObjectURL(file)));
+  };
+
+  const removeImage = (index: number) => {
+    const next = files.filter((_, i) => i !== index);
+    setFiles(next);
+    setPreviews(next.map((file) => URL.createObjectURL(file)));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
-    
-    // Creating property with some default values to satisfy backend requirements
-    const res = await fetchApi("/properties", {
+    setError("");
+
+    const res = await fetchApi<Property>("/properties", {
       method: "POST",
       body: JSON.stringify({
         title,
@@ -49,22 +67,65 @@ export default function PostPropertyPage() {
         address_line: addressLine,
         area_neighborhood: area,
         city: "Dhaka",
-        latitude: 23.8103, // Default Dhaka Lat
-        longitude: 90.4125, // Default Dhaka Lng
+        latitude: 23.8103,
+        longitude: 90.4125,
         has_lift: false,
         has_generator: false,
         has_cctv: false,
         has_wifi: true,
       }),
     });
-    
-    setSubmitting(false);
-    if (res.success) {
-      setSuccess(true);
-      setTimeout(() => router.push("/dashboard"), 2000);
-    } else {
-      alert(res.message || "Failed to create property");
+
+    if (!res.success || !res.data) {
+      setSubmitting(false);
+      setError(res.message || "Failed to create property");
+      return;
     }
+
+    const propertyId = res.data.id;
+
+    if (rent) {
+      await fetchApi(`/properties/${propertyId}/rooms`, {
+        method: "POST",
+        body: JSON.stringify({
+          room_number_or_name: "Room 1",
+          room_type: "MASTER",
+          monthly_rent: Number(rent),
+          security_deposit: Number(rent),
+          has_attached_bathroom: true,
+          total_capacity: 2,
+        }),
+      });
+    }
+
+    if (files.length) {
+      const urls: string[] = [];
+      for (const file of files) {
+        const upload = await uploadFile(file, "properties");
+        if (upload.success && upload.data) {
+          urls.push(upload.data.file_url);
+        }
+      }
+      if (urls.length) {
+        await fetchApi(`/properties/${propertyId}/media`, {
+          method: "POST",
+          body: JSON.stringify(
+            urls.map((url, index) => ({
+              media_url: url,
+              media_type: "IMAGE",
+              is_cover: index === 0,
+              display_order: index,
+            }))
+          ),
+        });
+      }
+    }
+
+    await fetchApi(`/properties/${propertyId}/publish?is_published=true`, { method: "PATCH" });
+
+    setSubmitting(false);
+    setSuccess(true);
+    setTimeout(() => router.push("/properties"), 1500);
   };
 
   return (
@@ -72,8 +133,8 @@ export default function PostPropertyPage() {
       <Navbar />
       <main className="flex-1 py-12">
         <div className="container mx-auto max-w-2xl px-4 sm:px-6">
-          <button 
-            onClick={() => router.push("/dashboard")} 
+          <button
+            onClick={() => router.push("/dashboard")}
             className="flex items-center text-sm text-muted-foreground hover:text-foreground mb-6 transition-colors"
           >
             <ArrowLeft className="mr-2 h-4 w-4" /> Back to Dashboard
@@ -96,20 +157,26 @@ export default function PostPropertyPage() {
                   <Plus className="h-6 w-6" />
                 </div>
                 <h3 className="text-lg font-semibold text-foreground">Property Posted!</h3>
-                <p className="text-sm text-muted-foreground mt-2">Your property has been created. Redirecting to dashboard...</p>
+                <p className="text-sm text-muted-foreground mt-2">Your listing is now live. Redirecting...</p>
               </div>
             ) : (
               <form onSubmit={handleSubmit} className="space-y-5">
+                {error && (
+                  <div className="rounded-xl bg-destructive/10 border border-destructive/20 p-3 text-xs text-destructive">
+                    {error}
+                  </div>
+                )}
+
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Property Title</label>
-                  <Input 
-                    required 
-                    placeholder="E.g. Modern Bachelor Flat in Dhanmondi" 
-                    value={title} 
+                  <Input
+                    required
+                    placeholder="E.g. Modern Bachelor Flat in Dhanmondi"
+                    value={title}
                     onChange={(e) => setTitle(e.target.value)}
                   />
                 </div>
-                
+
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Property Type</label>
                   <select
@@ -127,30 +194,42 @@ export default function PostPropertyPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <label className="text-sm font-medium">Area / Neighborhood</label>
-                    <Input 
-                      required 
-                      placeholder="E.g. Dhanmondi" 
-                      value={area} 
+                    <Input
+                      required
+                      placeholder="E.g. Dhanmondi"
+                      value={area}
                       onChange={(e) => setArea(e.target.value)}
                     />
                   </div>
                   <div className="space-y-2">
                     <label className="text-sm font-medium">Full Address</label>
-                    <Input 
-                      required 
-                      placeholder="E.g. House 12, Road 5" 
-                      value={addressLine} 
+                    <Input
+                      required
+                      placeholder="E.g. House 12, Road 5"
+                      value={addressLine}
                       onChange={(e) => setAddressLine(e.target.value)}
                     />
                   </div>
                 </div>
 
                 <div className="space-y-2">
+                  <label className="text-sm font-medium">Monthly Rent (৳)</label>
+                  <Input
+                    required
+                    type="number"
+                    min={0}
+                    placeholder="E.g. 15000"
+                    value={rent}
+                    onChange={(e) => setRent(e.target.value)}
+                  />
+                </div>
+
+                <div className="space-y-2">
                   <label className="text-sm font-medium">Description</label>
-                  <textarea 
-                    required 
-                    placeholder="Describe the facilities, rules, and environment..." 
-                    value={description} 
+                  <textarea
+                    required
+                    placeholder="Describe the facilities, rules, and environment..."
+                    value={description}
                     onChange={(e) => setDescription(e.target.value)}
                     className="w-full min-h-[120px] rounded-lg border border-input bg-transparent px-3 py-2 text-sm focus:outline-none resize-y"
                   />
@@ -166,11 +245,43 @@ export default function PostPropertyPage() {
                     </div>
                     <p className="text-sm font-medium text-foreground">Click to upload property images</p>
                     <p className="text-xs text-muted-foreground mt-1">JPG, PNG (Max 5MB per image)</p>
-                    <input type="file" multiple accept="image/*" className="hidden" id="image-upload" />
-                    <Button type="button" variant="outline" size="sm" className="mt-4" onClick={() => document.getElementById('image-upload')?.click()}>
+                    <input
+                      type="file"
+                      multiple
+                      accept="image/*"
+                      className="hidden"
+                      id="image-upload"
+                      onChange={(e) => {
+                        handleFiles(e.target.files);
+                        e.target.value = "";
+                      }}
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="mt-4"
+                      onClick={() => document.getElementById("image-upload")?.click()}
+                    >
                       Select Files
                     </Button>
                   </div>
+                  {previews.length > 0 && (
+                    <div className="grid grid-cols-4 gap-2">
+                      {previews.map((src, index) => (
+                        <div key={src} className="relative aspect-square rounded-lg overflow-hidden border border-border">
+                          <img src={src} alt={`Upload ${index + 1}`} className="h-full w-full object-cover" />
+                          <button
+                            type="button"
+                            onClick={() => removeImage(index)}
+                            className="absolute top-1 right-1 h-5 w-5 rounded-full bg-black/60 text-white flex items-center justify-center"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 <Button type="submit" className="w-full" disabled={submitting}>
