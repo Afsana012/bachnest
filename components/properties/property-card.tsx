@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { MapPin, Bed, Users, CheckCircle2, Wifi, Zap } from "lucide-react";
 import { Property } from "@/lib/types";
 import { Card, CardContent } from "@/components/ui/card";
@@ -17,10 +18,11 @@ export function PropertyCard({ property }: PropertyCardProps) {
     <Card className="group overflow-hidden rounded-2xl border border-border bg-card hover:border-foreground/20 hover:shadow-lg transition-all duration-200">
       <Link href={`/properties/${property.id}`} className="block">
         <div className="relative aspect-[16/10] w-full overflow-hidden bg-muted">
-          <img
+          <Image
             src={coverImage(property)}
             alt={property.title}
-            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+            fill
+            className="object-cover transition-transform duration-300 group-hover:scale-105"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
 

@@ -12,7 +12,7 @@ export default function NotFound() {
         <div className="space-y-2">
           <h1 className="text-4xl font-extrabold tracking-tight">404 - Page Not Found</h1>
           <p className="text-muted-foreground text-sm">
-            We couldn't find the page or accommodation listing you were looking for. It might have been moved or is no longer available.
+            We couldn&apos;t find the page or accommodation listing you were looking for. It might have been moved or is no longer available.
           </p>
         </div>
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">

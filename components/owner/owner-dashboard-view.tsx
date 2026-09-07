@@ -26,25 +26,64 @@ export function OwnerDashboardView() {
   const [tenancies, setTenancies] = useState<Tenancy[]>([]);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [complaints, setComplaints] = useState<Complaint[]>([]);
-  const [dataLoading, setDataLoading] = useState(true);
 
-  const loadOwnerData = useCallback(async () => {
-    setDataLoading(true);
-    const [propRes, bookRes, tenRes, invRes, compRes] = await Promise.all([
-      fetchApi<Property[]>("/owner/properties"),
-      fetchApi<Booking[]>("/bookings/me"),
-      fetchApi<Tenancy[]>("/tenancies/me"),
-      fetchApi<Invoice[]>("/billing/invoices"),
-      fetchApi<Complaint[]>("/complaints"),
-    ]);
+  // Per-tab loading state so only the active tab shows a spinner on refresh
+  const [tabLoading, setTabLoading] = useState<Record<OwnerTab, boolean>>({
+    properties: true,
+    bookings: true,
+    tenancies: true,
+    invoices: true,
+    complaints: true,
+  });
 
-    if (propRes.success && propRes.data) setProperties(propRes.data);
-    if (bookRes.success && bookRes.data) setBookings(bookRes.data);
-    if (tenRes.success && tenRes.data) setTenancies(tenRes.data);
-    if (invRes.success && invRes.data) setInvoices(invRes.data);
-    if (compRes.success && compRes.data) setComplaints(compRes.data);
-    setDataLoading(false);
+  const setLoading = (tab: OwnerTab, value: boolean) =>
+    setTabLoading((prev) => ({ ...prev, [tab]: value }));
+
+  const loadProperties = useCallback(async () => {
+    setLoading("properties", true);
+    const res = await fetchApi<Property[]>("/owner/properties");
+    if (res.success && res.data) setProperties(res.data);
+    setLoading("properties", false);
   }, []);
+
+  const loadBookings = useCallback(async () => {
+    setLoading("bookings", true);
+    const res = await fetchApi<Booking[]>("/bookings/me");
+    if (res.success && res.data) setBookings(res.data);
+    setLoading("bookings", false);
+  }, []);
+
+  const loadTenancies = useCallback(async () => {
+    setLoading("tenancies", true);
+    const res = await fetchApi<Tenancy[]>("/tenancies/me");
+    if (res.success && res.data) setTenancies(res.data);
+    setLoading("tenancies", false);
+  }, []);
+
+  const loadInvoices = useCallback(async () => {
+    setLoading("invoices", true);
+    const res = await fetchApi<Invoice[]>("/billing/invoices");
+    if (res.success && res.data) setInvoices(res.data);
+    setLoading("invoices", false);
+  }, []);
+
+  const loadComplaints = useCallback(async () => {
+    setLoading("complaints", true);
+    const res = await fetchApi<Complaint[]>("/complaints");
+    if (res.success && res.data) setComplaints(res.data);
+    setLoading("complaints", false);
+  }, []);
+
+  // Load all tabs on initial mount in parallel (background, non-blocking)
+  const loadAll = useCallback(async () => {
+    await Promise.all([
+      loadProperties(),
+      loadBookings(),
+      loadTenancies(),
+      loadInvoices(),
+      loadComplaints(),
+    ]);
+  }, [loadProperties, loadBookings, loadTenancies, loadInvoices, loadComplaints]);
 
   useEffect(() => {
     if (!loading && (!isAuthenticated || user?.role !== "OWNER")) {
@@ -52,10 +91,10 @@ export function OwnerDashboardView() {
       return;
     }
     if (isAuthenticated) {
-      const t = setTimeout(loadOwnerData, 0);
+      const t = setTimeout(loadAll, 0);
       return () => clearTimeout(t);
     }
-  }, [isAuthenticated, loading, user?.role, router, loadOwnerData]);
+  }, [isAuthenticated, loading, user?.role, router, loadAll]);
 
   if (loading) {
     return (
@@ -65,13 +104,17 @@ export function OwnerDashboardView() {
     );
   }
 
+  const pendingBookingsCount = bookings.filter((b) => b.booking_status === "REQUESTED").length;
+
   const tabs: Array<{ key: OwnerTab; label: string; count: number }> = [
     { key: "properties", label: "My Properties", count: properties.length },
-    { key: "bookings", label: "Booking Requests", count: bookings.filter((b) => b.booking_status === "REQUESTED").length },
+    { key: "bookings", label: "Booking Requests", count: pendingBookingsCount },
     { key: "tenancies", label: "Tenants", count: tenancies.length },
     { key: "invoices", label: "Invoices", count: invoices.length },
     { key: "complaints", label: "Complaints", count: complaints.length },
   ];
+
+  const isTabLoading = tabLoading[activeTab];
 
   return (
     <div className="container mx-auto max-w-6xl px-4 sm:px-6">
@@ -90,18 +133,27 @@ export function OwnerDashboardView() {
           <button
             key={tab.key}
             onClick={() => setActiveTab(tab.key)}
-            className={`pb-3 text-sm font-medium transition-all whitespace-nowrap ${
+            className={`pb-3 text-sm font-medium transition-all whitespace-nowrap relative ${
               activeTab === tab.key
                 ? "text-foreground border-b-2 border-foreground"
                 : "text-muted-foreground hover:text-foreground"
             }`}
           >
-            {tab.label} ({tab.count})
+            {tab.label}
+            {tab.count > 0 && (
+              <span className={`ml-2 rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${
+                tab.key === "bookings" && pendingBookingsCount > 0
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted text-muted-foreground"
+              }`}>
+                {tab.count}
+              </span>
+            )}
           </button>
         ))}
       </div>
 
-      {dataLoading ? (
+      {isTabLoading ? (
         <div className="flex items-center justify-center h-48">
           <div className="h-6 w-6 rounded-full border-2 border-primary border-t-transparent animate-spin" />
         </div>
@@ -109,7 +161,7 @@ export function OwnerDashboardView() {
         <div className="space-y-6">
           {activeTab === "properties" &&
             (properties.length > 0 ? (
-              <PropertyManager properties={properties} onChanged={loadOwnerData} />
+              <PropertyManager properties={properties} onChanged={loadProperties} />
             ) : (
               <div className="py-16 text-center rounded-2xl border border-dashed border-border bg-card">
                 <p className="text-sm text-muted-foreground">
@@ -122,12 +174,18 @@ export function OwnerDashboardView() {
               </div>
             ))}
 
-          {activeTab === "bookings" && <BookingRequests bookings={bookings} onChanged={loadOwnerData} />}
-          {activeTab === "tenancies" && <OwnerTenancies tenancies={tenancies} onChanged={loadOwnerData} />}
-          {activeTab === "invoices" && (
-            <InvoiceCreator tenancies={tenancies} invoices={invoices} onChanged={loadOwnerData} />
+          {activeTab === "bookings" && (
+            <BookingRequests bookings={bookings} onChanged={loadBookings} />
           )}
-          {activeTab === "complaints" && <ComplaintManager complaints={complaints} onChanged={loadOwnerData} />}
+          {activeTab === "tenancies" && (
+            <OwnerTenancies tenancies={tenancies} onChanged={loadTenancies} />
+          )}
+          {activeTab === "invoices" && (
+            <InvoiceCreator tenancies={tenancies} invoices={invoices} onChanged={loadInvoices} />
+          )}
+          {activeTab === "complaints" && (
+            <ComplaintManager complaints={complaints} onChanged={loadComplaints} />
+          )}
         </div>
       )}
     </div>
