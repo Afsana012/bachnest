@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { MapPin, ShieldCheck, Wifi, Zap, Camera, Building, Eye, ArrowLeft, CheckCircle2, Layers } from "lucide-react";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -71,7 +72,7 @@ export function PropertyDetailView({ property }: { property: Property }) {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-6">
           <div className="relative aspect-[16/9] overflow-hidden rounded-3xl bg-muted">
-            <img src={coverImage(property)} alt={property.title} className="h-full w-full object-cover" />
+            <Image src={coverImage(property)} alt={property.title} fill className="object-cover" />
             <div className="absolute top-4 left-4 flex gap-2">
               {property.is_verified_by_admin && (
                 <Badge variant="success" className="backdrop-blur-md bg-emerald-950/80 text-emerald-300">
@@ -93,7 +94,7 @@ export function PropertyDetailView({ property }: { property: Property }) {
             <div className="grid grid-cols-4 gap-3">
               {galleryImages.map((media) => (
                 <div key={media.id} className="relative aspect-[4/3] overflow-hidden rounded-2xl bg-muted">
-                  <img src={media.media_url} alt={media.caption || property.title} className="h-full w-full object-cover" />
+                  <Image src={media.media_url} alt={media.caption || property.title} fill className="object-cover" />
                 </div>
               ))}
             </div>

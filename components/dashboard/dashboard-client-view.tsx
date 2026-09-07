@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { UserCircle, ShieldAlert, CheckCircle2, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -152,7 +153,7 @@ export function DashboardClientView() {
             <div className="flex items-center gap-4 mb-6">
               <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center text-muted-foreground overflow-hidden">
                 {user?.avatar_url ? (
-                  <img src={user.avatar_url} alt={user.full_name} className="h-full w-full object-cover" />
+                  <Image src={user.avatar_url} alt={user.full_name} fill className="object-cover" />
                 ) : (
                   <UserCircle className="h-7 w-7" />
                 )}

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Search, MapPin, Bed, Users, Navigation, CheckCircle2 } from "lucide-react";
+import Image from "next/image";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { fetchApi, fetchPaginated } from "@/lib/api";
@@ -229,10 +230,11 @@ export function PropertiesExplorer({ initialItems = [] }: { initialItems?: Searc
                   className="group overflow-hidden rounded-2xl border border-border bg-card hover:border-foreground/20 hover:shadow-lg transition-all duration-200"
                 >
                   <div className="relative aspect-[16/10] w-full overflow-hidden bg-muted">
-                    <img
+                  <Image
                       src={item.cover_image_url || "/images/hero-room.jpg"}
                       alt={item.title}
-                      className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                      fill
+                      className="object-cover transition-transform duration-300 group-hover:scale-105"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
                     <div className="absolute top-3 left-3 flex flex-wrap gap-1.5">

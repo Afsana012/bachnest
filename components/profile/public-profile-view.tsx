@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { UserCircle, Star, ShieldCheck, CalendarDays } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Review, User } from "@/lib/types";
@@ -15,7 +16,7 @@ export function PublicProfileView({ user, reviews }: { user: User; reviews: Revi
           <div className="flex flex-col sm:flex-row sm:items-center gap-6">
             <div className="h-20 w-20 rounded-full bg-muted flex items-center justify-center text-muted-foreground overflow-hidden shrink-0">
               {user.avatar_url ? (
-                <img src={user.avatar_url} alt={user.full_name} className="h-full w-full object-cover" />
+                <Image src={user.avatar_url} alt={user.full_name} fill className="object-cover" />
               ) : (
                 <UserCircle className="h-11 w-11" />
               )}

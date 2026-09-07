@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { UserCircle, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -83,7 +84,7 @@ export function ProfileForm() {
         <div className="flex items-center gap-4">
           <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center text-muted-foreground overflow-hidden shrink-0">
             {avatarUrl ? (
-              <img src={avatarUrl} alt={user.full_name} className="h-full w-full object-cover" />
+              <Image src={avatarUrl} alt={user.full_name} fill className="object-cover" />
             ) : (
               <UserCircle className="h-9 w-9" />
             )}

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { ShieldAlert, PhoneCall, Radio, Users, MapPin } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { useSosWebSocket } from "@/hooks/use-sos-websocket";
+import { useAuth } from "@/hooks/use-auth";
 import { fetchApi } from "@/lib/api";
 import { EmergencyAlert, EmergencyType } from "@/lib/types";
 import { enumLabel, formatDate } from "@/lib/format";
@@ -23,7 +24,8 @@ function getCurrentPosition(): Promise<GeolocationPosition> {
 }
 
 export function EmergencySosView() {
-  const { isConnected, alerts } = useSosWebSocket();
+  const { user } = useAuth();
+  const { isConnected, alerts } = useSosWebSocket(user?.id ?? "guest");
   const [triggered, setTriggered] = useState(false);
   const [loading, setLoading] = useState(false);
   const [alertType, setAlertType] = useState<EmergencyType>("SECURITY_INTRUDER");
