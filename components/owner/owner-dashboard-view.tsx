@@ -13,13 +13,17 @@ import { BookingRequests } from "@/components/owner/booking-requests";
 import { InvoiceCreator } from "@/components/owner/invoice-creator";
 import { ComplaintManager } from "@/components/owner/complaint-manager";
 import { OwnerTenancies } from "@/components/owner/owner-tenancies";
+import { OwnerNotices } from "@/components/owner/owner-notices";
+import { NoticeComposerModal } from "@/components/owner/notice-composer-modal";
+import { Megaphone } from "lucide-react";
 
-type OwnerTab = "properties" | "bookings" | "tenancies" | "invoices" | "complaints";
+type OwnerTab = "properties" | "bookings" | "tenancies" | "invoices" | "complaints" | "notices";
 
 export function OwnerDashboardView() {
   const router = useRouter();
   const { user, isAuthenticated, loading } = useAuth();
   const [activeTab, setActiveTab] = useState<OwnerTab>("properties");
+  const [isNoticeComposerOpen, setIsNoticeComposerOpen] = useState(false);
 
   const [properties, setProperties] = useState<Property[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -34,6 +38,7 @@ export function OwnerDashboardView() {
     tenancies: true,
     invoices: true,
     complaints: true,
+    notices: false,
   });
 
   const setLoading = (tab: OwnerTab, value: boolean) =>
@@ -112,6 +117,7 @@ export function OwnerDashboardView() {
     { key: "tenancies", label: "Tenants", count: tenancies.length },
     { key: "invoices", label: "Invoices", count: invoices.length },
     { key: "complaints", label: "Complaints", count: complaints.length },
+    { key: "notices", label: "Building Notices", count: 0 },
   ];
 
   const isTabLoading = tabLoading[activeTab];
@@ -123,9 +129,19 @@ export function OwnerDashboardView() {
           <h1 className="text-3xl font-extrabold tracking-tight">Owner Hub</h1>
           <p className="text-sm text-muted-foreground mt-1">Manage listings, tenants, billing, and maintenance.</p>
         </div>
-        <Button onClick={() => router.push("/dashboard/properties/new")} className="rounded-xl shrink-0">
-          <Plus className="h-4 w-4 mr-1.5" /> Post New Property
-        </Button>
+        <div className="flex items-center gap-3">
+          <Button
+            variant="outline"
+            onClick={() => setIsNoticeComposerOpen(true)}
+            className="rounded-xl shrink-0"
+            disabled={properties.length === 0}
+          >
+            <Megaphone className="h-4 w-4 mr-1.5 text-primary" /> Broadcast Notice
+          </Button>
+          <Button onClick={() => router.push("/dashboard/properties/new")} className="rounded-xl shrink-0">
+            <Plus className="h-4 w-4 mr-1.5" /> Post New Property
+          </Button>
+        </div>
       </div>
 
       <div className="flex items-center gap-6 border-b border-border mb-8 overflow-x-auto">
@@ -186,8 +202,20 @@ export function OwnerDashboardView() {
           {activeTab === "complaints" && (
             <ComplaintManager complaints={complaints} onChanged={loadComplaints} />
           )}
+          {activeTab === "notices" && (
+            <OwnerNotices properties={properties} />
+          )}
         </div>
       )}
+
+      <NoticeComposerModal
+        properties={properties}
+        isOpen={isNoticeComposerOpen}
+        onClose={() => setIsNoticeComposerOpen(false)}
+        onSuccess={() => {
+          setActiveTab("notices");
+        }}
+      />
     </div>
   );
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { FileText, SquareOff, ShieldAlert, CheckCircle2, Receipt, Star } from "lucide-react";
+import { FileText, SquareOff, ShieldAlert, CheckCircle2, Receipt, Star, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { Tenancy, DepositClaimOut } from "@/lib/types";
@@ -10,12 +10,14 @@ import { formatDate, formatMoney } from "@/lib/format";
 import { DepositSettlementModal } from "./deposit-settlement-modal";
 import { DepositClearanceVoucherModal } from "@/components/shared/deposit-clearance-voucher-modal";
 import { ReviewSubmissionModal } from "@/components/shared/review-submission-modal";
+import { DMPVerificationModal } from "@/components/shared/dmp-verification-modal";
 
 export function OwnerTenancies({ tenancies, onChanged }: { tenancies: Tenancy[]; onChanged: () => void }) {
   const [terminatingId, setTerminatingId] = useState<string | null>(null);
   const [settlingClaim, setSettlingClaim] = useState<DepositClaimOut | null>(null);
   const [voucherClaim, setVoucherClaim] = useState<DepositClaimOut | null>(null);
   const [reviewingTenancy, setReviewingTenancy] = useState<Tenancy | null>(null);
+  const [dmpTenancyId, setDmpTenancyId] = useState<string | null>(null);
   const [claimsMap, setClaimsMap] = useState<Record<string, DepositClaimOut>>({});
 
   useEffect(() => {
@@ -104,6 +106,16 @@ export function OwnerTenancies({ tenancies, onChanged }: { tenancies: Tenancy[];
                   </Button>
                 )}
 
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setDmpTenancyId(tenancy.id)}
+                  className="rounded-xl font-medium border-emerald-500/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10"
+                >
+                  <ShieldCheck className="h-4 w-4 mr-1.5" />
+                  DMP Police Form
+                </Button>
+
                 {(tenancy.status === "TERMINATED" || claim?.status === "SETTLED") && (
                   <Button
                     variant="outline"
@@ -170,6 +182,14 @@ export function OwnerTenancies({ tenancies, onChanged }: { tenancies: Tenancy[];
             setReviewingTenancy(null);
             onChanged();
           }}
+        />
+      )}
+
+      {dmpTenancyId && (
+        <DMPVerificationModal
+          tenancyId={dmpTenancyId}
+          isOpen={Boolean(dmpTenancyId)}
+          onClose={() => setDmpTenancyId(null)}
         />
       )}
     </div>
