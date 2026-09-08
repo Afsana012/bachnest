@@ -124,9 +124,9 @@ export function Navbar() {
             </div>
 
             <Link
-              href="/properties?tab=roommates"
+              href="/roommates"
               className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                pathname.includes("roommates")
+                pathname.startsWith("/roommates")
                   ? "bg-muted text-foreground"
                   : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
               }`}
@@ -312,10 +312,10 @@ export function Navbar() {
               Popular in Mirpur
             </Link>
             <Link
-              href="/properties?tab=roommates"
+              href="/roommates"
               className="block px-2 py-1.5 rounded-lg text-sm text-foreground hover:bg-muted transition-colors"
             >
-              Roommate Match
+              Find Roommates
             </Link>
             <Link
               href="/parking"

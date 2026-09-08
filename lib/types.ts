@@ -511,3 +511,29 @@ export interface DigitalAgreement {
   signed_at?: string | null;
   signature_name?: string | null;
 }
+
+export type RoommateLookingType = "ROOM_WANTED" | "FLATSHARE" | "HAVE_ROOM_NEED_ROOMMATE";
+export type RoommateOccupationCategory = "STUDENT" | "JOB_HOLDER" | "FREELANCER" | "OTHER";
+
+export interface RoommateProfile {
+  id: string;
+  user_id: string;
+  full_name: string;
+  avatar_url?: string;
+  gender: Gender;
+  occupation: string;
+  occupation_category: RoommateOccupationCategory;
+  institution_or_company: string;
+  preferred_areas: string[];
+  budget_max: Money;
+  looking_for: RoommateLookingType;
+  move_in_date: string;
+  lifestyle_tags: string[];
+  bio: string;
+  is_kyc_verified: boolean;
+  trust_score: number;
+  phone_visible: boolean;
+  phone?: string;
+  email?: string;
+  created_at: string;
+}
