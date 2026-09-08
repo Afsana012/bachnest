@@ -54,11 +54,13 @@ export function NoticeComposerModal({
 
   if (!isOpen) return null;
 
+  const effectivePropertyId = propertyId || selectedPropertyId || (properties.length > 0 ? properties[0].id : "");
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
 
-    if (!propertyId) {
+    if (!effectivePropertyId) {
       setError("Please select a target building or property.");
       return;
     }
@@ -73,7 +75,7 @@ export function NoticeComposerModal({
 
     setIsLoading(true);
     try {
-      const res = await fetchApi<Notice>(`/properties/${propertyId}/notices`, {
+      const res = await fetchApi<Notice>(`/properties/${effectivePropertyId}/notices`, {
         method: "POST",
         body: JSON.stringify({
           title: title.trim(),
@@ -132,7 +134,7 @@ export function NoticeComposerModal({
             <div className="relative">
               <Building2 className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
               <select
-                value={propertyId}
+                value={effectivePropertyId}
                 onChange={(e) => setPropertyId(e.target.value)}
                 className="w-full rounded-lg border border-border bg-background py-2 pl-9 pr-3 text-xs text-foreground focus:border-primary focus:outline-none"
               >
