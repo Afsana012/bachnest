@@ -1,13 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { Globe, Trash2, DoorOpen, Plus, Megaphone, ChevronDown } from "lucide-react";
+import { Globe, Trash2, DoorOpen, Plus, Megaphone, ChevronDown, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { Notice, Property, Room, RoomSeat, RoomType } from "@/lib/types";
 import { fetchApi } from "@/lib/api";
 import { enumLabel, formatMoney } from "@/lib/format";
+import { EditPropertyModal } from "./edit-property-modal";
+import { EditRoomModal } from "./edit-room-modal";
 
 const ROOM_TYPES: RoomType[] = ["SINGLE", "MASTER", "SHARED"];
 
@@ -27,6 +29,8 @@ export function PropertyManager({ properties, onChanged }: { properties: Propert
   const [noticeContent, setNoticeContent] = useState("");
 
   const [busy, setBusy] = useState(false);
+  const [editingProperty, setEditingProperty] = useState<Property | null>(null);
+  const [editingRoom, setEditingRoom] = useState<Room | null>(null);
 
   const toggleProperty = async (propertyId: string) => {
     if (expandedId === propertyId) {
@@ -178,6 +182,10 @@ export function PropertyManager({ properties, onChanged }: { properties: Propert
               </div>
             </div>
             <div className="flex items-center gap-2 shrink-0">
+              <Button variant="outline" size="sm" onClick={() => setEditingProperty(property)}>
+                <Pencil className="h-4 w-4 mr-1.5" />
+                Edit
+              </Button>
               <Button variant="outline" size="sm" onClick={() => togglePublish(property)}>
                 <Globe className="h-4 w-4 mr-1.5" />
                 {property.is_published ? "Unpublish" : "Publish"}
@@ -252,6 +260,9 @@ export function PropertyManager({ properties, onChanged }: { properties: Propert
                             </p>
                           </div>
                           <div className="flex items-center gap-2">
+                            <Button variant="ghost" size="sm" onClick={() => setEditingRoom(room)} title="Edit Room">
+                              <Pencil className="h-4 w-4" />
+                            </Button>
                             <AddSeatControl disabled={busy} onAdd={(label, rent) => addSeat(room.id, label, rent)} />
                             <Button variant="ghost" size="sm" onClick={() => deleteRoom(room.id)} className="text-destructive">
                               <Trash2 className="h-4 w-4" />
@@ -337,6 +348,31 @@ export function PropertyManager({ properties, onChanged }: { properties: Propert
           )}
         </div>
       ))}
+
+      {editingProperty && (
+        <EditPropertyModal
+          property={editingProperty}
+          isOpen={true}
+          onClose={() => setEditingProperty(null)}
+          onSaved={() => {
+            setEditingProperty(null);
+            onChanged();
+          }}
+        />
+      )}
+
+      {editingRoom && (
+        <EditRoomModal
+          room={editingRoom}
+          isOpen={true}
+          onClose={() => setEditingRoom(null)}
+          onSaved={(updated) => {
+            setRooms((prev) => prev.map((r) => (r.id === updated.id ? updated : r)));
+            setEditingRoom(null);
+            onChanged();
+          }}
+        />
+      )}
     </div>
   );
 }

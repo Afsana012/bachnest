@@ -209,6 +209,34 @@ export interface RoomCreate {
   total_capacity?: number;
 }
 
+export interface PropertyUpdate {
+  title?: string;
+  description?: string;
+  property_type?: PropertyType;
+  address_line?: string;
+  area_neighborhood?: string;
+  city?: string;
+  has_lift?: boolean;
+  has_generator?: boolean;
+  has_cctv?: boolean;
+  has_wifi?: boolean;
+  gate_closing_time?: string;
+  visitor_policy?: string;
+}
+
+export interface RoomUpdate {
+  room_number_or_name?: string;
+  room_type?: RoomType;
+  monthly_rent?: Money;
+  security_deposit?: Money;
+  has_attached_bathroom?: boolean;
+  has_balcony?: boolean;
+  has_ac?: boolean;
+  is_furnished?: boolean;
+  is_available?: boolean;
+}
+
+
 export interface SearchPropertyItem {
   property_id: string;
   title: string;
