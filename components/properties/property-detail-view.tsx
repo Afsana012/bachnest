@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { MapPin, ShieldCheck, Wifi, Zap, Camera, Building, Eye, ArrowLeft, CheckCircle2, Layers } from "lucide-react";
+import { MapPin, ShieldCheck, Wifi, Zap, Camera, Building, Eye, ArrowLeft, CheckCircle2, Layers, CalendarDays, Clock } from "lucide-react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -22,6 +22,10 @@ export function PropertyDetailView({ property }: { property: Property }) {
     firstAvailable?.seats?.find((s) => !s.is_occupied) ?? null
   );
   const [moveInDate, setMoveInDate] = useState("");
+  const [bookingMode, setBookingMode] = useState<"visit" | "direct">("visit");
+  const [visitDate, setVisitDate] = useState("");
+  const [visitTimeSlot, setVisitTimeSlot] = useState("03:00 PM - 05:00 PM");
+  const [visitNotes, setVisitNotes] = useState("");
   const [bookingSuccess, setBookingSuccess] = useState(false);
   const [isBooking, setIsBooking] = useState(false);
 
@@ -39,7 +43,8 @@ export function PropertyDetailView({ property }: { property: Property }) {
       alert("Select a room first.");
       return;
     }
-    const requestedDate = moveInDate || new Date(Date.now() + 86400000 * 3).toISOString().split("T")[0];
+    const requestedDate = moveInDate || new Date(Date.now() + 86400000 * 7).toISOString().split("T")[0];
+    const defaultVisit = new Date(Date.now() + 86400000 * 2).toISOString().split("T")[0];
     setIsBooking(true);
     const res = await fetchApi<Booking>("/bookings/request", {
       method: "POST",
@@ -48,6 +53,9 @@ export function PropertyDetailView({ property }: { property: Property }) {
         room_id: selectedRoom.id,
         seat_id: selectedSeat?.id,
         requested_move_in_date: requestedDate,
+        preferred_visit_date: bookingMode === "visit" ? (visitDate || defaultVisit) : undefined,
+        visit_time_slot: bookingMode === "visit" ? visitTimeSlot : undefined,
+        visit_notes: bookingMode === "visit" ? (visitNotes.trim() || undefined) : undefined,
       }),
     });
     setIsBooking(false);
@@ -263,35 +271,119 @@ export function PropertyDetailView({ property }: { property: Property }) {
             </CardHeader>
 
             <CardContent className="p-0 space-y-4">
-              <div className="rounded-2xl bg-muted/40 p-3 text-xs space-y-1.5">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Security Deposit</span>
-                  <span className="font-semibold">
-                    {formatMoney(selectedRoom ? toNumber(selectedRoom.security_deposit) : 0)}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Move-in Date</span>
-                  <span className="font-semibold">{moveInDate || "Flexible"}</span>
-                </div>
+              <div className="flex rounded-xl bg-muted/60 p-1 text-xs font-semibold">
+                <button
+                  type="button"
+                  onClick={() => setBookingMode("visit")}
+                  className={`flex-1 py-1.5 rounded-lg flex items-center justify-center gap-1.5 transition-colors ${
+                    bookingMode === "visit" ? "bg-card text-foreground shadow-xs" : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  <Eye className="h-3.5 w-3.5" /> Schedule Visit
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setBookingMode("direct")}
+                  className={`flex-1 py-1.5 rounded-lg flex items-center justify-center gap-1.5 transition-colors ${
+                    bookingMode === "direct" ? "bg-card text-foreground shadow-xs" : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  <CalendarDays className="h-3.5 w-3.5" /> Direct Book
+                </button>
               </div>
 
-              <div>
-                <label className="text-xs font-medium text-muted-foreground">Preferred move-in date</label>
-                <input
-                  type="date"
-                  value={moveInDate}
-                  onChange={(e) => setMoveInDate(e.target.value)}
-                  className="w-full h-10 mt-1 rounded-xl border border-input bg-transparent px-3 text-sm focus:outline-none"
-                />
-              </div>
+              {bookingMode === "visit" ? (
+                <div className="space-y-3 pt-1">
+                  <div className="p-3 rounded-2xl bg-primary/5 border border-primary/20 text-xs text-muted-foreground">
+                    <p className="font-semibold text-foreground flex items-center gap-1.5 mb-1">
+                      <ShieldCheck className="h-3.5 w-3.5 text-primary" /> Inspect in Person First
+                    </p>
+                    Visit the property, meet the landlord, and inspect the room before paying any advance.
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+                      <CalendarDays className="h-3.5 w-3.5" /> Preferred Visit Date *
+                    </label>
+                    <input
+                      type="date"
+                      value={visitDate}
+                      min={new Date().toISOString().split("T")[0]}
+                      onChange={(e) => setVisitDate(e.target.value)}
+                      className="w-full h-10 mt-1 rounded-xl border border-input bg-transparent px-3 text-sm focus:outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-medium text-muted-foreground flex items-center gap-1 mb-1.5">
+                      <Clock className="h-3.5 w-3.5" /> Time Slot
+                    </label>
+                    <div className="grid grid-cols-1 gap-1.5">
+                      {["10:00 AM - 12:00 PM", "03:00 PM - 05:00 PM", "06:00 PM - 08:00 PM"].map((slot) => (
+                        <button
+                          key={slot}
+                          type="button"
+                          onClick={() => setVisitTimeSlot(slot)}
+                          className={`text-left px-3 py-1.5 rounded-lg border text-xs transition-colors ${
+                            visitTimeSlot === slot
+                              ? "border-primary bg-primary/10 text-primary font-semibold"
+                              : "border-border text-muted-foreground hover:bg-muted/40"
+                          }`}
+                        >
+                          {slot}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-medium text-muted-foreground">Note for Owner (Optional)</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Coming with parents / need parking info"
+                      value={visitNotes}
+                      onChange={(e) => setVisitNotes(e.target.value)}
+                      className="w-full h-9 mt-1 rounded-xl border border-input bg-transparent px-3 text-xs focus:outline-none"
+                    />
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-3 pt-1">
+                  <div className="rounded-2xl bg-muted/40 p-3 text-xs space-y-1.5">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Security Deposit</span>
+                      <span className="font-semibold">
+                        {formatMoney(selectedRoom ? toNumber(selectedRoom.security_deposit) : 0)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Move-in Date</span>
+                      <span className="font-semibold">{moveInDate || "Flexible"}</span>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-medium text-muted-foreground">Preferred move-in date</label>
+                    <input
+                      type="date"
+                      value={moveInDate}
+                      onChange={(e) => setMoveInDate(e.target.value)}
+                      className="w-full h-10 mt-1 rounded-xl border border-input bg-transparent px-3 text-sm focus:outline-none"
+                    />
+                  </div>
+                </div>
+              )}
 
               {bookingSuccess ? (
                 <div className="rounded-2xl bg-emerald-500/10 border border-emerald-500/20 p-4 text-center">
                   <CheckCircle2 className="h-8 w-8 text-emerald-500 mx-auto mb-2" />
-                  <h4 className="font-bold text-sm text-emerald-600 dark:text-emerald-400">Booking Request Sent!</h4>
+                  <h4 className="font-bold text-sm text-emerald-600 dark:text-emerald-400">
+                    {bookingMode === "visit" ? "Visit Request Sent!" : "Booking Request Sent!"}
+                  </h4>
                   <p className="text-xs text-muted-foreground mt-1">
-                    The landlord has been notified. Check your dashboard for updates.
+                    {bookingMode === "visit"
+                      ? "The landlord has been notified of your requested inspection date. Track status in your dashboard."
+                      : "The landlord has been notified. Check your dashboard for updates."}
                   </p>
                   <Button onClick={() => router.push("/dashboard")} className="mt-3 w-full rounded-xl" size="sm">
                     View in Dashboard
@@ -303,7 +395,13 @@ export function PropertyDetailView({ property }: { property: Property }) {
                   disabled={isBooking || !selectedRoom}
                   className="w-full h-12 rounded-2xl font-semibold shadow-md"
                 >
-                  {isBooking ? "Submitting..." : selectedRoom ? "Request to Book Room" : "Select a Room First"}
+                  {isBooking
+                    ? "Submitting..."
+                    : selectedRoom
+                      ? bookingMode === "visit"
+                        ? "Request Property Visit"
+                        : "Request to Book Room"
+                      : "Select a Room First"}
                 </Button>
               )}
             </CardContent>
