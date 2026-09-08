@@ -23,6 +23,7 @@ import {
   getStoredRoommates,
 } from "@/lib/data/roommates";
 import { RoommateConnectModal } from "@/components/roommates/roommate-connect-modal";
+import { TrustBadge } from "@/components/shared/trust-badge";
 import { PostRoommateModal } from "@/components/roommates/post-roommate-modal";
 
 const DHAKA_AREAS = [
@@ -279,13 +280,11 @@ export function RoommateExplorer() {
                         </div>
                       </div>
 
-                      <div className="text-right shrink-0">
+                      <div className="text-right shrink-0 flex flex-col items-end gap-1">
                         <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-black bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
                           {score}% Match
                         </div>
-                        <span className="block text-[10px] text-muted-foreground mt-0.5">
-                          Trust: {rm.trust_score}%
-                        </span>
+                        <TrustBadge size="sm" score={rm.trust_score} isKycVerified={rm.is_kyc_verified} showDetails={false} />
                       </div>
                     </div>
 

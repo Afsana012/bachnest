@@ -537,3 +537,85 @@ export interface RoommateProfile {
   email?: string;
   created_at: string;
 }
+
+export type DepositRefundStatus =
+  | "REQUESTED"
+  | "INSPECTION_PENDING"
+  | "DEDUCTIONS_PROPOSED"
+  | "SETTLED"
+  | "DISPUTED"
+  | "REJECTED";
+
+export interface DepositDeductionItem {
+  reason: string;
+  amount: Money;
+  note?: string;
+}
+
+export interface DepositClaimCreate {
+  tenancy_id: string;
+  tenant_payout_method: string;
+  tenant_payout_account: string;
+  move_out_date: string;
+  tenant_notes?: string;
+}
+
+export interface DepositClaimSettle {
+  deductions: DepositDeductionItem[];
+  transaction_reference?: string;
+  landlord_remarks?: string;
+}
+
+export interface DepositClaimOut {
+  id: string;
+  tenancy_id: string;
+  tenant_id: string;
+  owner_id: string;
+  status: DepositRefundStatus;
+  total_deposit_amount: Money;
+  requested_refund_amount: Money;
+  deduction_amount: Money;
+  net_refund_amount: Money;
+  deduction_breakdown: DepositDeductionItem[];
+  tenant_payout_method: string;
+  tenant_payout_account: string;
+  move_out_date: string;
+  tenant_notes?: string;
+  landlord_remarks?: string;
+  transaction_reference?: string;
+  settled_at?: string;
+  created_at: string;
+  updated_at: string;
+  property_title?: string;
+  room_name?: string;
+  tenant_name?: string;
+  owner_name?: string;
+}
+
+export interface ComplaintCreateRequest {
+  property_id: string;
+  room_id?: string;
+  title: string;
+  description: string;
+  category: ComplaintCategory;
+  priority: ComplaintPriority;
+  evidence_urls?: string[];
+}
+
+export interface ComplaintStatusUpdate {
+  status: ComplaintStatus;
+  resolution_notes?: string;
+  repair_cost?: Money;
+  cost_bearer?: string;
+}
+
+export interface UserTrustProfile {
+  user_id: string;
+  full_name: string;
+  role: string;
+  trust_score: number;
+  is_kyc_verified: boolean;
+  total_reviews: number;
+  avg_rating: number;
+}
+
