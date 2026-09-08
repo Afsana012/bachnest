@@ -8,14 +8,15 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/use-auth";
 import { fetchApi } from "@/lib/api";
-import { Booking, Complaint, Invoice, KYCOut, Tenancy } from "@/lib/types";
+import { Booking, Complaint, Invoice, KYCOut, ParkingBooking, Tenancy } from "@/lib/types";
 import { TenancyPanel } from "@/components/dashboard/tenancy-panel";
 import { InvoicePanel } from "@/components/dashboard/invoice-panel";
 import { ComplaintPanel } from "@/components/dashboard/complaint-panel";
 import { BookingPanel } from "@/components/dashboard/booking-panel";
 import { NoticePanel } from "@/components/dashboard/notice-panel";
+import { ParkingPanel } from "@/components/dashboard/parking-panel";
 
-type DashboardTab = "tenancies" | "invoices" | "complaints" | "bookings" | "notices";
+type DashboardTab = "tenancies" | "invoices" | "complaints" | "bookings" | "notices" | "parking";
 
 export function DashboardClientView() {
   const router = useRouter();
@@ -24,17 +25,19 @@ export function DashboardClientView() {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [complaints, setComplaints] = useState<Complaint[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
+  const [parkingPasses, setParkingPasses] = useState<ParkingBooking[]>([]);
   const [kyc, setKyc] = useState<KYCOut | null>(null);
 
   const [activeTab, setActiveTab] = useState<DashboardTab>("tenancies");
 
   const loadDashboardData = useCallback(async () => {
-    const [tenRes, invRes, kycRes, compRes, bookRes] = await Promise.all([
+    const [tenRes, invRes, kycRes, compRes, bookRes, parkRes] = await Promise.all([
       fetchApi<Tenancy[]>("/tenancies/me"),
       fetchApi<Invoice[]>("/billing/invoices"),
       fetchApi<KYCOut>("/kyc/me"),
       fetchApi<Complaint[]>("/complaints"),
       fetchApi<Booking[]>("/bookings/me"),
+      fetchApi<ParkingBooking[]>("/parking/me"),
     ]);
 
     if (tenRes.success && tenRes.data) setTenancies(tenRes.data);
@@ -42,6 +45,7 @@ export function DashboardClientView() {
     if (kycRes.success && kycRes.data) setKyc(kycRes.data);
     if (compRes.success && compRes.data) setComplaints(compRes.data);
     if (bookRes.success && bookRes.data) setBookings(bookRes.data);
+    if (parkRes.success && parkRes.data) setParkingPasses(parkRes.data);
   }, []);
 
   useEffect(() => {
@@ -69,6 +73,7 @@ export function DashboardClientView() {
     { key: "invoices", label: "Invoices", count: invoices.length },
     { key: "complaints", label: "Maintenance", count: complaints.length },
     { key: "bookings", label: "Bookings", count: bookings.length },
+    { key: "parking", label: "Parking", count: parkingPasses.length },
   ];
 
   return (
@@ -228,6 +233,7 @@ export function DashboardClientView() {
               <ComplaintPanel complaints={complaints} tenancies={tenancies} onChanged={loadDashboardData} />
             )}
             {activeTab === "bookings" && <BookingPanel bookings={bookings} onChanged={loadDashboardData} />}
+            {activeTab === "parking" && <ParkingPanel />}
             {activeTab === "notices" && <NoticePanel />}
           </div>
         </div>
