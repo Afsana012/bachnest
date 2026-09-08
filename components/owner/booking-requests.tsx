@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { CheckCircle2, XCircle, AlertCircle } from "lucide-react";
+import { CheckCircle2, XCircle, AlertCircle, Eye, CalendarCheck, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { Booking } from "@/lib/types";
@@ -27,6 +27,36 @@ export function BookingRequests({ bookings, onChanged }: { bookings: Booking[]; 
       onChanged();
     } else {
       alert(res.message || "Failed to approve booking");
+    }
+  };
+
+  const confirmVisit = async (bookingId: string) => {
+    setBusy(true);
+    setDecidingId(bookingId);
+    const res = await fetchApi<Booking>(`/bookings/${bookingId}/visit-confirm`, {
+      method: "PATCH",
+    });
+    setBusy(false);
+    setDecidingId(null);
+    if (res.success) {
+      onChanged();
+    } else {
+      alert(res.message || "Failed to confirm visit date");
+    }
+  };
+
+  const markVisited = async (bookingId: string) => {
+    setBusy(true);
+    setDecidingId(bookingId);
+    const res = await fetchApi<Booking>(`/bookings/${bookingId}/mark-visited`, {
+      method: "PATCH",
+    });
+    setBusy(false);
+    setDecidingId(null);
+    if (res.success) {
+      onChanged();
+    } else {
+      alert(res.message || "Failed to mark as visited");
     }
   };
 
@@ -65,7 +95,14 @@ export function BookingRequests({ bookings, onChanged }: { bookings: Booking[]; 
           <div key={booking.id} className="p-5 rounded-xl border border-border bg-card shadow-sm space-y-3">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div>
-                <h4 className="font-semibold text-foreground">Tenant #{booking.tenant_id.slice(0, 8)}</h4>
+                <div className="flex items-center gap-2">
+                  <h4 className="font-semibold text-foreground">Tenant #{booking.tenant_id.slice(0, 8)}</h4>
+                  {booking.preferred_visit_date && (
+                    <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20 flex items-center gap-1">
+                      <Eye className="h-3 w-3" /> Visit Requested
+                    </span>
+                  )}
+                </div>
                 <p className="text-sm text-muted-foreground mt-1">
                   Wants to move in {formatDate(booking.requested_move_in_date)} · Token:{" "}
                   {formatMoney(booking.token_deposit_amount)}
@@ -82,7 +119,31 @@ export function BookingRequests({ bookings, onChanged }: { bookings: Booking[]; 
               <div className="flex items-center gap-3 shrink-0">
                 <StatusBadge status={booking.booking_status} />
                 {booking.booking_status === "REQUESTED" && rejectPromptId !== booking.id && (
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap gap-2">
+                    {booking.preferred_visit_date && booking.visit_status === "SCHEDULED" && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={busy && decidingId === booking.id}
+                        className="text-purple-600 hover:text-purple-700 hover:bg-purple-50 dark:hover:bg-purple-950/30"
+                        onClick={() => confirmVisit(booking.id)}
+                      >
+                        <CalendarCheck className="h-4 w-4 mr-1.5" />
+                        Confirm Visit Date
+                      </Button>
+                    )}
+                    {booking.preferred_visit_date && booking.visit_status === "CONFIRMED" && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={busy && decidingId === booking.id}
+                        className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-950/30"
+                        onClick={() => markVisited(booking.id)}
+                      >
+                        <CheckCircle2 className="h-4 w-4 mr-1.5" />
+                        Mark as Visited
+                      </Button>
+                    )}
                     <Button
                       size="sm"
                       variant="outline"
@@ -106,6 +167,39 @@ export function BookingRequests({ bookings, onChanged }: { bookings: Booking[]; 
                 )}
               </div>
             </div>
+
+            {booking.preferred_visit_date && (
+              <div className="p-3 rounded-xl bg-muted/40 border border-border/50 text-xs flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <Eye className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                  <span className="font-semibold">Inspection Appointment:</span>
+                  <span>{formatDate(booking.preferred_visit_date)}</span>
+                  {booking.visit_time_slot && (
+                    <span className="text-muted-foreground flex items-center gap-1">
+                      <Clock className="h-3 w-3 inline" /> {booking.visit_time_slot}
+                    </span>
+                  )}
+                  {booking.visit_notes && (
+                    <span className="text-muted-foreground italic"> — &ldquo;{booking.visit_notes}&rdquo;</span>
+                  )}
+                </div>
+                <span
+                  className={`px-2 py-0.5 rounded-md font-semibold text-[11px] ${
+                    booking.visit_status === "COMPLETED"
+                      ? "bg-emerald-500/10 text-emerald-600 border border-emerald-500/30"
+                      : booking.visit_status === "CONFIRMED"
+                        ? "bg-blue-500/10 text-blue-600 border border-blue-500/30"
+                        : "bg-amber-500/10 text-amber-600 border border-amber-500/30"
+                  }`}
+                >
+                  {booking.visit_status === "COMPLETED"
+                    ? "Tenant Visited"
+                    : booking.visit_status === "CONFIRMED"
+                      ? "Visit Confirmed"
+                      : "Awaiting Your Confirmation"}
+                </span>
+              </div>
+            )}
 
             {rejectPromptId === booking.id && (
               <div className="pt-3 border-t border-border/60 space-y-3">

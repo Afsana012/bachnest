@@ -261,9 +261,19 @@ export interface Booking {
   booking_status: BookingStatus;
   requested_move_in_date: string;
   token_deposit_amount: Money;
+  preferred_visit_date?: string;
+  visit_time_slot?: string;
+  visit_notes?: string;
+  visit_status?: "SCHEDULED" | "CONFIRMED" | "COMPLETED" | "SKIPPED";
   owner_remarks?: string;
   cancellation_reason?: string;
   created_at: string;
+}
+
+export interface BookingAdvancePayRequest {
+  advance_amount: number;
+  payment_method?: PaymentMethod;
+  remarks?: string;
 }
 
 export interface Tenancy {
