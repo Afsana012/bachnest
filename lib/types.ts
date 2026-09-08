@@ -619,3 +619,62 @@ export interface UserTrustProfile {
   avg_rating: number;
 }
 
+export interface DMPTenantInfo {
+  id: string;
+  full_name: string;
+  phone: string;
+  email: string;
+  occupation: string;
+  institution_or_company?: string;
+  gender: string;
+  nid_number?: string;
+  is_kyc_verified: boolean;
+  father_name?: string;
+  mother_name?: string;
+  date_of_birth?: string;
+  marital_status?: string;
+  permanent_address?: string;
+  religion?: string;
+  education?: string;
+  emergency_contact_name?: string;
+  emergency_contact_phone?: string;
+  emergency_contact_relation?: string;
+}
+
+export interface DMPOwnerInfo {
+  id: string;
+  full_name: string;
+  phone: string;
+  email: string;
+  address?: string;
+}
+
+export interface DMPPropertyInfo {
+  id: string;
+  title: string;
+  address_line: string;
+  area_neighborhood: string;
+  city: string;
+  flat_number?: string;
+}
+
+export interface DMPRoomInfo {
+  id: string;
+  room_number_or_name: string;
+  room_type: string;
+}
+
+export interface DMPFormData {
+  tenancy_id: string;
+  lease_start_date: string;
+  monthly_rent: Money;
+  security_deposit: Money;
+  status: string;
+  tenant: DMPTenantInfo;
+  owner: DMPOwnerInfo;
+  property: DMPPropertyInfo;
+  room?: DMPRoomInfo;
+  previous_landlord_info?: string;
+  co_occupants_info?: string;
+}
+

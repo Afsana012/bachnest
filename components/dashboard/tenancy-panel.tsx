@@ -11,6 +11,7 @@ import { DigitalAgreementModal } from "./digital-agreement-modal";
 import { DepositRefundModal } from "./deposit-refund-modal";
 import { DepositClearanceVoucherModal } from "@/components/shared/deposit-clearance-voucher-modal";
 import { ReviewSubmissionModal } from "@/components/shared/review-submission-modal";
+import { DMPVerificationModal } from "@/components/shared/dmp-verification-modal";
 
 export function TenancyPanel({ tenancies, onChanged }: { tenancies: Tenancy[]; onChanged: () => void }) {
   const [agreementFor, setAgreementFor] = useState<string | null>(null);
@@ -18,6 +19,7 @@ export function TenancyPanel({ tenancies, onChanged }: { tenancies: Tenancy[]; o
   const [noticeReason, setNoticeReason] = useState("");
   const [moveOutDate, setMoveOutDate] = useState("");
   const [reviewingTenancy, setReviewingTenancy] = useState<Tenancy | null>(null);
+  const [dmpTenancyId, setDmpTenancyId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
   const [depositClaimFor, setDepositClaimFor] = useState<Tenancy | null>(null);
@@ -154,6 +156,16 @@ export function TenancyPanel({ tenancies, onChanged }: { tenancies: Tenancy[]; o
                       </Button>
                     )}
 
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setDmpTenancyId(t.id)}
+                      className="rounded-xl font-medium border-emerald-500/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10"
+                    >
+                      <ShieldCheck className="h-4 w-4 mr-1.5" />
+                      DMP Police Form
+                    </Button>
+
                     {(t.status === "TERMINATED" || t.status === "EVICTED" || claim?.status === "SETTLED") && (
                       <Button
                         variant="outline"
@@ -244,6 +256,14 @@ export function TenancyPanel({ tenancies, onChanged }: { tenancies: Tenancy[]; o
             setReviewingTenancy(null);
             onChanged();
           }}
+        />
+      )}
+
+      {dmpTenancyId && (
+        <DMPVerificationModal
+          tenancyId={dmpTenancyId}
+          isOpen={Boolean(dmpTenancyId)}
+          onClose={() => setDmpTenancyId(null)}
         />
       )}
     </div>
