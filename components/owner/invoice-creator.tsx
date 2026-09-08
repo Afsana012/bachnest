@@ -1,20 +1,30 @@
 "use client";
 
 import { useState } from "react";
-import { FilePlus2 } from "lucide-react";
+import { FilePlus2, FileText, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { Invoice, Tenancy } from "@/lib/types";
 import { fetchApi } from "@/lib/api";
 import { formatDate, formatMoney, toNumber } from "@/lib/format";
+import { InvoiceReceiptModal } from "@/components/shared/invoice-receipt-modal";
+import { downloadInvoicePdf } from "@/lib/invoice-pdf";
 
 function currentBillingMonth() {
   const now = new Date();
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
 }
 
-export function InvoiceCreator({ tenancies, invoices, onChanged }: { tenancies: Tenancy[]; invoices: Invoice[]; onChanged: () => void }) {
+export function InvoiceCreator({
+  tenancies,
+  invoices,
+  onChanged,
+}: {
+  tenancies: Tenancy[];
+  invoices: Invoice[];
+  onChanged: () => void;
+}) {
   const [tenancyId, setTenancyId] = useState("");
   const [billingMonth, setBillingMonth] = useState(currentBillingMonth());
   const [baseRent, setBaseRent] = useState("");
@@ -25,6 +35,7 @@ export function InvoiceCreator({ tenancies, invoices, onChanged }: { tenancies: 
   const [internet, setInternet] = useState("0");
   const [dueDate, setDueDate] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
 
   const createInvoice = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -117,7 +128,28 @@ export function InvoiceCreator({ tenancies, invoices, onChanged }: { tenancies: 
                   </p>
                 )}
               </div>
-              <StatusBadge status={invoice.status} />
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setSelectedInvoice(invoice)}
+                  className="rounded-xl font-medium"
+                >
+                  <FileText className="h-4 w-4 mr-1.5" />
+                  View Voucher
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => downloadInvoicePdf(invoice)}
+                  className="rounded-xl font-medium shadow-2xs"
+                  title="Download Official PDF"
+                >
+                  <Download className="h-4 w-4 mr-1.5" />
+                  PDF
+                </Button>
+                <StatusBadge status={invoice.status} />
+              </div>
             </div>
           ))
         ) : (
@@ -126,6 +158,14 @@ export function InvoiceCreator({ tenancies, invoices, onChanged }: { tenancies: 
           </div>
         )}
       </div>
+
+      {selectedInvoice && (
+        <InvoiceReceiptModal
+          invoice={selectedInvoice}
+          isOpen={Boolean(selectedInvoice)}
+          onClose={() => setSelectedInvoice(null)}
+        />
+      )}
     </div>
   );
 }

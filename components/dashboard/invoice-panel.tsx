@@ -1,18 +1,21 @@
 "use client";
 
 import { useState } from "react";
-import { FileText, CreditCard, Receipt } from "lucide-react";
+import { FileText, CreditCard, Receipt, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { CheckoutResponse, Invoice, Payment } from "@/lib/types";
 import { fetchApi } from "@/lib/api";
 import { formatDate, formatMoney, toNumber } from "@/lib/format";
+import { InvoiceReceiptModal } from "@/components/shared/invoice-receipt-modal";
+import { downloadInvoicePdf } from "@/lib/invoice-pdf";
 
 const PAYABLE = new Set(["ISSUED", "PARTIALLY_PAID", "OVERDUE"]);
 
 export function InvoicePanel({ invoices, onChanged }: { invoices: Invoice[]; onChanged: () => void }) {
   const [payingId, setPayingId] = useState<string | null>(null);
   const [receipt, setReceipt] = useState<Payment | null>(null);
+  const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
 
   const payInvoice = async (invoice: Invoice) => {
     setPayingId(invoice.id);
@@ -69,10 +72,29 @@ export function InvoicePanel({ invoices, onChanged }: { invoices: Invoice[]; onC
                   <p className="text-xs text-destructive mt-1">Outstanding: {formatMoney(dueAmount(inv))}</p>
                 )}
               </div>
-              <div className="flex items-center gap-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setSelectedInvoice(inv)}
+                  className="rounded-xl font-medium"
+                >
+                  <FileText className="h-4 w-4 mr-1.5" />
+                  View Voucher
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => downloadInvoicePdf(inv)}
+                  className="rounded-xl font-medium shadow-2xs"
+                  title="Download Official PDF"
+                >
+                  <Download className="h-4 w-4 mr-1.5" />
+                  PDF
+                </Button>
                 <StatusBadge status={inv.status} />
                 {PAYABLE.has(inv.status) && (
-                  <Button size="sm" disabled={payingId === inv.id} onClick={() => payInvoice(inv)}>
+                  <Button size="sm" disabled={payingId === inv.id} onClick={() => payInvoice(inv)} className="rounded-xl font-semibold shadow-xs">
                     <CreditCard className="h-4 w-4 mr-1.5" />
                     {payingId === inv.id ? "Processing..." : "Pay Now"}
                   </Button>
@@ -86,6 +108,17 @@ export function InvoicePanel({ invoices, onChanged }: { invoices: Invoice[]; onC
           <FileText className="h-10 w-10 text-muted-foreground/40 mx-auto mb-3" />
           <p className="text-sm text-muted-foreground">No pending or past invoices found.</p>
         </div>
+      )}
+
+      {selectedInvoice && (
+        <InvoiceReceiptModal
+          invoice={selectedInvoice}
+          isOpen={Boolean(selectedInvoice)}
+          onClose={() => setSelectedInvoice(null)}
+          onPay={() => {
+            payInvoice(selectedInvoice);
+          }}
+        />
       )}
     </div>
   );
