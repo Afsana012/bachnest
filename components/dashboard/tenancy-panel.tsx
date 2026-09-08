@@ -1,23 +1,46 @@
 "use client";
 
-import { useState } from "react";
-import { Home, FileText, Star, PenTool, CheckCircle2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Home, FileText, Star, PenTool, CheckCircle2, ShieldCheck, Receipt } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/shared/status-badge";
-import { Tenancy } from "@/lib/types";
+import { Tenancy, DepositClaimOut } from "@/lib/types";
 import { fetchApi } from "@/lib/api";
 import { formatDate, formatMoney } from "@/lib/format";
 import { DigitalAgreementModal } from "./digital-agreement-modal";
+import { DepositRefundModal } from "./deposit-refund-modal";
+import { DepositClearanceVoucherModal } from "@/components/shared/deposit-clearance-voucher-modal";
+import { ReviewSubmissionModal } from "@/components/shared/review-submission-modal";
 
 export function TenancyPanel({ tenancies, onChanged }: { tenancies: Tenancy[]; onChanged: () => void }) {
   const [agreementFor, setAgreementFor] = useState<string | null>(null);
   const [noticeFor, setNoticeFor] = useState<string | null>(null);
   const [noticeReason, setNoticeReason] = useState("");
   const [moveOutDate, setMoveOutDate] = useState("");
-  const [reviewFor, setReviewFor] = useState<string | null>(null);
-  const [rating, setRating] = useState(5);
-  const [comment, setComment] = useState("");
+  const [reviewingTenancy, setReviewingTenancy] = useState<Tenancy | null>(null);
   const [busy, setBusy] = useState(false);
+
+  const [depositClaimFor, setDepositClaimFor] = useState<Tenancy | null>(null);
+  const [voucherClaim, setVoucherClaim] = useState<DepositClaimOut | null>(null);
+  const [claimsMap, setClaimsMap] = useState<Record<string, DepositClaimOut>>({});
+
+  useEffect(() => {
+    async function loadClaims() {
+      try {
+        const res = await fetchApi<DepositClaimOut[]>("/deposits/claims/me");
+        if (res.success && Array.isArray(res.data)) {
+          const map: Record<string, DepositClaimOut> = {};
+          res.data.forEach((c) => {
+            map[c.tenancy_id] = c;
+          });
+          setClaimsMap(map);
+        }
+      } catch {
+        // Fallback silently if unauthenticated
+      }
+    }
+    loadClaims();
+  }, [tenancies]);
 
   const serveNotice = async (tenancyId: string) => {
     if (!noticeReason.trim() || !moveOutDate) {
@@ -40,23 +63,6 @@ export function TenancyPanel({ tenancies, onChanged }: { tenancies: Tenancy[]; o
     }
   };
 
-  const submitReview = async (tenancyId: string) => {
-    setBusy(true);
-    const res = await fetchApi(`/reviews`, {
-      method: "POST",
-      body: JSON.stringify({ tenancy_id: tenancyId, rating, comment: comment.trim() || undefined }),
-    });
-    setBusy(false);
-    if (res.success) {
-      setReviewFor(null);
-      setComment("");
-      setRating(5);
-      alert("Review submitted. It becomes public once the other party reviews too.");
-    } else {
-      alert(res.message || "Failed to submit review");
-    }
-  };
-
   return (
     <div>
       <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
@@ -64,120 +70,132 @@ export function TenancyPanel({ tenancies, onChanged }: { tenancies: Tenancy[]; o
       </h2>
       {tenancies.length > 0 ? (
         <div className="space-y-4">
-          {tenancies.map((t) => (
-            <div key={t.id} className="p-5 rounded-xl border border-border bg-card shadow-sm">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div>
-                  <h4 className="font-semibold text-foreground flex items-center gap-2">
-                    <FileText className="h-4 w-4 text-muted-foreground" /> Agreement #{t.id.slice(0, 8)}
-                  </h4>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Started {formatDate(t.lease_start_date)} • Rent: {formatMoney(t.agreed_monthly_rent)} • Deposit:{" "}
-                    {formatMoney(t.agreed_security_deposit)}
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Agreement status: {t.agreement_status}
-                    {t.digital_agreement_url && (
-                      <a href={t.digital_agreement_url} target="_blank" rel="noreferrer" className="ml-2 text-primary hover:underline">
-                        View agreement
-                      </a>
-                    )}
-                  </p>
-                </div>
-                <div className="flex flex-wrap items-center gap-2.5">
-                  <Button
-                    variant={t.agreement_status === "SIGNED" ? "outline" : "default"}
-                    size="sm"
-                    onClick={() => setAgreementFor(t.id)}
-                    className="rounded-xl font-medium"
-                  >
-                    {t.agreement_status === "SIGNED" ? (
-                      <>
-                        <CheckCircle2 className="h-4 w-4 mr-1.5 text-emerald-500" />
-                        View Agreement
-                      </>
+          {tenancies.map((t) => {
+            const claim = claimsMap[t.id];
+
+            return (
+              <div key={t.id} className="p-5 rounded-xl border border-border bg-card shadow-sm">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div>
+                    <h4 className="font-semibold text-foreground flex items-center gap-2">
+                      <FileText className="h-4 w-4 text-muted-foreground" /> Agreement #{t.id.slice(0, 8)}
+                    </h4>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Started {formatDate(t.lease_start_date)} • Rent: {formatMoney(t.agreed_monthly_rent)} • Deposit:{" "}
+                      {formatMoney(t.agreed_security_deposit)}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Agreement status: {t.agreement_status}
+                      {t.digital_agreement_url && (
+                        <a href={t.digital_agreement_url} target="_blank" rel="noreferrer" className="ml-2 text-primary hover:underline">
+                          View agreement
+                        </a>
+                      )}
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2.5">
+                    <Button
+                      variant={t.agreement_status === "SIGNED" ? "outline" : "default"}
+                      size="sm"
+                      onClick={() => setAgreementFor(t.id)}
+                      className="rounded-xl font-medium"
+                    >
+                      {t.agreement_status === "SIGNED" ? (
+                        <>
+                          <CheckCircle2 className="h-4 w-4 mr-1.5 text-emerald-500" />
+                          View Agreement
+                        </>
+                      ) : (
+                        <>
+                          <PenTool className="h-4 w-4 mr-1.5" />
+                          Review & E-Sign
+                        </>
+                      )}
+                    </Button>
+
+                    <StatusBadge status={t.status} />
+
+                    {claim ? (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setVoucherClaim(claim)}
+                        className={`rounded-xl font-medium ${
+                          claim.status === "SETTLED"
+                            ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                            : "border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400"
+                        }`}
+                      >
+                        <Receipt className="h-4 w-4 mr-1.5" />
+                        Clearance Voucher ({claim.status})
+                      </Button>
                     ) : (
-                      <>
-                        <PenTool className="h-4 w-4 mr-1.5" />
-                        Review & E-Sign
-                      </>
+                      (t.status === "ACTIVE" || t.status === "NOTICE_SERVED") && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setDepositClaimFor(t)}
+                          className="rounded-xl font-medium border-primary/30 text-primary hover:bg-primary/10"
+                        >
+                          <ShieldCheck className="h-4 w-4 mr-1.5" />
+                          Claim Deposit Refund
+                        </Button>
+                      )
                     )}
-                  </Button>
-                  <StatusBadge status={t.status} />
-                  {t.status === "ACTIVE" && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setNoticeFor(noticeFor === t.id ? null : t.id)}
-                      className="rounded-xl"
-                    >
-                      Serve Notice
-                    </Button>
-                  )}
-                  {(t.status === "TERMINATED" || t.status === "EVICTED") && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setReviewFor(reviewFor === t.id ? null : t.id)}
-                      className="rounded-xl"
-                    >
-                      <Star className="h-4 w-4 mr-1.5" /> Leave Review
-                    </Button>
-                  )}
+
+                    {t.status === "ACTIVE" && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setNoticeFor(noticeFor === t.id ? null : t.id)}
+                        className="rounded-xl"
+                      >
+                        Serve Notice
+                      </Button>
+                    )}
+
+                    {(t.status === "TERMINATED" || t.status === "EVICTED" || claim?.status === "SETTLED") && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setReviewingTenancy(t)}
+                        className="rounded-xl border-amber-500/30 text-amber-600 dark:text-amber-400 hover:bg-amber-500/10"
+                      >
+                        <Star className="h-4 w-4 mr-1.5 fill-amber-500 text-amber-500" />
+                        Leave Trust Rating
+                      </Button>
+                    )}
+                  </div>
                 </div>
+
+                {noticeFor === t.id && (
+                  <div className="mt-4 pt-4 border-t border-border/60 space-y-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <input
+                        type="date"
+                        value={moveOutDate}
+                        min={new Date().toISOString().split("T")[0]}
+                        onChange={(e) => setMoveOutDate(e.target.value)}
+                        className="h-10 rounded-md border border-input bg-transparent px-3 text-sm focus:outline-none"
+                      />
+                      <input
+                        placeholder="Reason for moving out"
+                        value={noticeReason}
+                        onChange={(e) => setNoticeReason(e.target.value)}
+                        className="h-10 rounded-md border border-input bg-transparent px-3 text-sm focus:outline-none"
+                      />
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Notice period for this agreement is {t.notice_period_days} days.
+                    </p>
+                    <Button size="sm" disabled={busy} onClick={() => serveNotice(t.id)}>
+                      Confirm Move-out Notice
+                    </Button>
+                  </div>
+                )}
               </div>
-
-              {noticeFor === t.id && (
-                <div className="mt-4 pt-4 border-t border-border/60 space-y-3">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <input
-                      type="date"
-                      value={moveOutDate}
-                      min={new Date().toISOString().split("T")[0]}
-                      onChange={(e) => setMoveOutDate(e.target.value)}
-                      className="h-10 rounded-md border border-input bg-transparent px-3 text-sm focus:outline-none"
-                    />
-                    <input
-                      placeholder="Reason for moving out"
-                      value={noticeReason}
-                      onChange={(e) => setNoticeReason(e.target.value)}
-                      className="h-10 rounded-md border border-input bg-transparent px-3 text-sm focus:outline-none"
-                    />
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Notice period for this agreement is {t.notice_period_days} days.
-                  </p>
-                  <Button size="sm" disabled={busy} onClick={() => serveNotice(t.id)}>
-                    Confirm Move-out Notice
-                  </Button>
-                </div>
-              )}
-
-              {reviewFor === t.id && (
-                <div className="mt-4 pt-4 border-t border-border/60 space-y-3">
-                  <div className="flex items-center gap-1">
-                    {[1, 2, 3, 4, 5].map((star) => (
-                      <button key={star} onClick={() => setRating(star)} type="button">
-                        <Star
-                          className={`h-6 w-6 ${star <= rating ? "fill-amber-400 text-amber-400" : "text-muted-foreground"}`}
-                        />
-                      </button>
-                    ))}
-                  </div>
-                  <textarea
-                    rows={2}
-                    placeholder="Share your experience with the landlord..."
-                    value={comment}
-                    onChange={(e) => setComment(e.target.value)}
-                    className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm focus:outline-none"
-                  />
-                  <Button size="sm" disabled={busy} onClick={() => submitReview(t.id)}>
-                    Submit Review
-                  </Button>
-                </div>
-              )}
-            </div>
-          ))}
+            );
+          })}
         </div>
       ) : (
         <div className="py-12 text-center rounded-xl border border-dashed border-border bg-muted/20">
@@ -192,6 +210,38 @@ export function TenancyPanel({ tenancies, onChanged }: { tenancies: Tenancy[]; o
           isOpen={Boolean(agreementFor)}
           onClose={() => setAgreementFor(null)}
           onSigned={() => {
+            onChanged();
+          }}
+        />
+      )}
+
+      {depositClaimFor && (
+        <DepositRefundModal
+          tenancy={depositClaimFor}
+          isOpen={Boolean(depositClaimFor)}
+          onClose={() => setDepositClaimFor(null)}
+          onSuccess={(claim) => {
+            setClaimsMap((prev) => ({ ...prev, [claim.tenancy_id]: claim }));
+            onChanged();
+          }}
+        />
+      )}
+
+      {voucherClaim && (
+        <DepositClearanceVoucherModal
+          claim={voucherClaim}
+          isOpen={Boolean(voucherClaim)}
+          onClose={() => setVoucherClaim(null)}
+        />
+      )}
+
+      {reviewingTenancy && (
+        <ReviewSubmissionModal
+          tenancy={reviewingTenancy}
+          isOpen={Boolean(reviewingTenancy)}
+          onClose={() => setReviewingTenancy(null)}
+          onSuccess={() => {
+            setReviewingTenancy(null);
             onChanged();
           }}
         />

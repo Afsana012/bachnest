@@ -15,6 +15,7 @@ import { ComplaintPanel } from "@/components/dashboard/complaint-panel";
 import { BookingPanel } from "@/components/dashboard/booking-panel";
 import { NoticePanel } from "@/components/dashboard/notice-panel";
 import { ParkingPanel } from "@/components/dashboard/parking-panel";
+import { TrustBadge } from "@/components/shared/trust-badge";
 
 type DashboardTab = "tenancies" | "invoices" | "complaints" | "bookings" | "notices" | "parking";
 
@@ -197,6 +198,12 @@ export function DashboardClientView() {
               </div>
             </div>
           </div>
+
+          <TrustBadge
+            score={user?.trust_score ?? 85}
+            isKycVerified={Boolean(user?.is_kyc_verified || kyc?.status === "APPROVED")}
+            role={user?.role}
+          />
         </div>
 
         <div className="lg:col-span-8">
