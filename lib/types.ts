@@ -415,3 +415,99 @@ export interface AuditLog {
   ip_address?: string;
   created_at: string;
 }
+
+export type ParkingVehicleType = "BIKE" | "CAR";
+export type ParkingRentalPlan = "DAILY" | "MONTHLY";
+export type ParkingBookingStatus = "ACTIVE" | "EXPIRED" | "CANCELLED";
+
+export interface ParkingSpace {
+  id: string;
+  property_id: string;
+  space_number_or_name: string;
+  vehicle_type: ParkingVehicleType;
+  monthly_rate: number | string;
+  daily_rate?: number | string | null;
+  is_covered: boolean;
+  has_cctv: boolean;
+  is_available: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ParkingSpaceCreate {
+  space_number_or_name: string;
+  vehicle_type: ParkingVehicleType;
+  monthly_rate: number;
+  daily_rate?: number;
+  is_covered: boolean;
+  has_cctv: boolean;
+}
+
+export interface ParkingBooking {
+  id: string;
+  user_id: string;
+  parking_space_id: string;
+  rental_plan: ParkingRentalPlan;
+  vehicle_registration_number: string;
+  start_date: string;
+  end_date?: string | null;
+  total_amount: number | string;
+  status: ParkingBookingStatus;
+  created_at: string;
+  updated_at: string;
+  parking_space?: ParkingSpace;
+}
+
+export interface ParkingBookingCreate {
+  rental_plan: ParkingRentalPlan;
+  vehicle_registration_number: string;
+  start_date: string;
+  end_date?: string;
+}
+
+export interface ParkingSearchItem {
+  id: string;
+  property_id: string;
+  property_title: string;
+  property_address: string;
+  area_neighborhood: string;
+  city: string;
+  space_number_or_name: string;
+  vehicle_type: ParkingVehicleType;
+  monthly_rate: number | string;
+  daily_rate?: number | string | null;
+  is_covered: boolean;
+  has_cctv: boolean;
+  is_available: boolean;
+  owner_name: string;
+  owner_phone: string;
+}
+
+export interface AgreementSignRequest {
+  signature_name: string;
+  agreed_terms: boolean;
+}
+
+export interface DigitalAgreement {
+  tenancy_id: string;
+  agreement_status: AgreementStatus;
+  property_title: string;
+  property_address: string;
+  area_neighborhood: string;
+  city: string;
+  room_number_or_name: string;
+  owner_name: string;
+  owner_phone: string;
+  tenant_name: string;
+  tenant_phone: string;
+  tenant_nid_or_id?: string | null;
+  agreed_monthly_rent: number | string;
+  agreed_security_deposit: number | string;
+  lease_start_date: string;
+  lease_end_date?: string | null;
+  notice_period_days: number;
+  gate_closing_time?: string | null;
+  visitor_policy?: string | null;
+  signed_at?: string | null;
+  signature_name?: string | null;
+}

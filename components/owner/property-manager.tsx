@@ -1,11 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { Globe, Trash2, DoorOpen, Plus, Megaphone, ChevronDown, Pencil } from "lucide-react";
+import { Globe, Trash2, DoorOpen, Plus, Megaphone, ChevronDown, Pencil, Bike, Car } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { StatusBadge } from "@/components/shared/status-badge";
-import { Notice, Property, Room, RoomSeat, RoomType } from "@/lib/types";
+import { Notice, ParkingSpace, ParkingVehicleType, Property, Room, RoomSeat, RoomType } from "@/lib/types";
 import { fetchApi } from "@/lib/api";
 import { enumLabel, formatMoney } from "@/lib/format";
 import { EditPropertyModal } from "./edit-property-modal";
@@ -17,8 +17,10 @@ export function PropertyManager({ properties, onChanged }: { properties: Propert
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [rooms, setRooms] = useState<Room[]>([]);
   const [notices, setNotices] = useState<Notice[]>([]);
+  const [parkingSpaces, setParkingSpaces] = useState<ParkingSpace[]>([]);
   const [showRoomForm, setShowRoomForm] = useState(false);
   const [showNoticeForm, setShowNoticeForm] = useState(false);
+  const [showParkingForm, setShowParkingForm] = useState(false);
 
   const [roomName, setRoomName] = useState("");
   const [roomType, setRoomType] = useState<RoomType>("SINGLE");
@@ -27,6 +29,13 @@ export function PropertyManager({ properties, onChanged }: { properties: Propert
 
   const [noticeTitle, setNoticeTitle] = useState("");
   const [noticeContent, setNoticeContent] = useState("");
+
+  const [parkingName, setParkingName] = useState("");
+  const [parkingVehicleType, setParkingVehicleType] = useState<ParkingVehicleType>("BIKE");
+  const [parkingMonthlyRent, setParkingMonthlyRent] = useState("");
+  const [parkingDailyRate, setParkingDailyRate] = useState("");
+  const [parkingCovered, setParkingCovered] = useState(true);
+  const [parkingCctv, setParkingCctv] = useState(true);
 
   const [busy, setBusy] = useState(false);
   const [editingProperty, setEditingProperty] = useState<Property | null>(null);
@@ -40,13 +49,16 @@ export function PropertyManager({ properties, onChanged }: { properties: Propert
     setExpandedId(propertyId);
     setShowRoomForm(false);
     setShowNoticeForm(false);
+    setShowParkingForm(false);
 
-    const [roomsRes, noticesRes] = await Promise.all([
+    const [roomsRes, noticesRes, parkingRes] = await Promise.all([
       fetchApi<Room[]>(`/properties/${propertyId}/rooms`),
       fetchApi<Notice[]>(`/properties/${propertyId}/notices`),
+      fetchApi<ParkingSpace[]>(`/properties/${propertyId}/parking`),
     ]);
     setRooms(roomsRes.success && roomsRes.data ? roomsRes.data : []);
     setNotices(noticesRes.success && noticesRes.data ? noticesRes.data : []);
+    setParkingSpaces(parkingRes.success && parkingRes.data ? parkingRes.data : []);
   };
 
   const togglePublish = async (property: Property) => {
@@ -158,6 +170,45 @@ export function PropertyManager({ properties, onChanged }: { properties: Propert
       setShowNoticeForm(false);
     } else {
       alert(res.message || "Failed to publish notice");
+    }
+  };
+
+  const addParkingSpace = async (propertyId: string) => {
+    if (!parkingName.trim() || !parkingMonthlyRent) {
+      alert("Please provide slot name and monthly rent.");
+      return;
+    }
+    setBusy(true);
+    const res = await fetchApi<ParkingSpace>(`/properties/${propertyId}/parking`, {
+      method: "POST",
+      body: JSON.stringify({
+        space_number_or_name: parkingName.trim(),
+        vehicle_type: parkingVehicleType,
+        monthly_rate: Number(parkingMonthlyRent),
+        daily_rate: parkingDailyRate ? Number(parkingDailyRate) : undefined,
+        is_covered: parkingCovered,
+        has_cctv: parkingCctv,
+      }),
+    });
+    setBusy(false);
+    if (res.success && res.data) {
+      setParkingSpaces([...parkingSpaces, res.data]);
+      setParkingName("");
+      setParkingMonthlyRent("");
+      setParkingDailyRate("");
+      setShowParkingForm(false);
+    } else {
+      alert(res.message || "Failed to add parking slot");
+    }
+  };
+
+  const deleteParkingSpace = async (spaceId: string) => {
+    if (!confirm("Delete this parking slot?")) return;
+    const res = await fetchApi(`/parking/${spaceId}`, { method: "DELETE" });
+    if (res.success) {
+      setParkingSpaces(parkingSpaces.filter((p) => p.id !== spaceId));
+    } else {
+      alert(res.message || "Failed to delete parking slot");
     }
   };
 
@@ -342,6 +393,113 @@ export function PropertyManager({ properties, onChanged }: { properties: Propert
                   </div>
                 ) : (
                   <p className="text-sm text-muted-foreground">No notices posted for this building yet.</p>
+                )}
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <h5 className="text-sm font-semibold flex items-center gap-2">
+                    <Car className="h-4 w-4 text-muted-foreground" /> Garage & Parking Slots
+                  </h5>
+                  <Button variant="outline" size="sm" onClick={() => setShowParkingForm(!showParkingForm)}>
+                    <Plus className="h-4 w-4 mr-1.5" /> Add Parking Slot
+                  </Button>
+                </div>
+
+                {showParkingForm && (
+                  <div className="mb-4 p-4 rounded-xl bg-muted/30 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+                    <Input
+                      placeholder="Slot name (e.g. Ground Bay B-01)"
+                      value={parkingName}
+                      onChange={(e) => setParkingName(e.target.value)}
+                    />
+                    <select
+                      value={parkingVehicleType}
+                      onChange={(e) => setParkingVehicleType(e.target.value as ParkingVehicleType)}
+                      className="h-10 rounded-md border border-input bg-transparent px-3 text-sm focus:outline-none"
+                    >
+                      <option value="BIKE">Motorcycle / Bike</option>
+                      <option value="CAR">Car Parking</option>
+                    </select>
+                    <Input
+                      placeholder="Monthly Rent (৳)"
+                      type="number"
+                      value={parkingMonthlyRent}
+                      onChange={(e) => setParkingMonthlyRent(e.target.value)}
+                    />
+                    <Input
+                      placeholder="Daily Rate (৳, opt)"
+                      type="number"
+                      value={parkingDailyRate}
+                      onChange={(e) => setParkingDailyRate(e.target.value)}
+                    />
+                    <div className="sm:col-span-2 md:col-span-4 flex flex-wrap items-center justify-between gap-3 pt-1">
+                      <div className="flex items-center gap-4 text-xs font-medium">
+                        <label className="flex items-center gap-1.5 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={parkingCovered}
+                            onChange={(e) => setParkingCovered(e.target.checked)}
+                            className="rounded border-border"
+                          />
+                          <span>Covered Garage</span>
+                        </label>
+                        <label className="flex items-center gap-1.5 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={parkingCctv}
+                            onChange={(e) => setParkingCctv(e.target.checked)}
+                            className="rounded border-border"
+                          />
+                          <span>24/7 CCTV</span>
+                        </label>
+                      </div>
+                      <Button size="sm" disabled={busy} onClick={() => addParkingSpace(property.id)}>
+                        Save Parking Slot
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
+                {parkingSpaces.length > 0 ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {parkingSpaces.map((slot) => (
+                      <div key={slot.id} className="p-3.5 rounded-xl border border-border/80 bg-background/50 flex items-center justify-between gap-3">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            {slot.vehicle_type === "BIKE" ? (
+                              <Bike className="h-4 w-4 text-primary" />
+                            ) : (
+                              <Car className="h-4 w-4 text-primary" />
+                            )}
+                            <span className="font-semibold text-sm">{slot.space_number_or_name}</span>
+                            <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${
+                              slot.is_available ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" : "bg-muted text-muted-foreground"
+                            }`}>
+                              {slot.is_available ? "Vacant" : "Occupied"}
+                            </span>
+                          </div>
+                          <div className="text-xs text-muted-foreground flex items-center gap-2">
+                            <span>{formatMoney(slot.monthly_rate)}/mo</span>
+                            {slot.daily_rate && <span>• {formatMoney(slot.daily_rate)}/day</span>}
+                            {slot.is_covered && <span>• Covered</span>}
+                            {slot.has_cctv && <span>• CCTV</span>}
+                          </div>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          disabled={busy}
+                          onClick={() => deleteParkingSpace(slot.id)}
+                          className="text-destructive hover:text-destructive shrink-0 h-8 w-8 p-0"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">No parking slots listed for this property yet.</p>
                 )}
               </div>
             </div>

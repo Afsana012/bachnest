@@ -1,14 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import { Home, FileText, Star } from "lucide-react";
+import { Home, FileText, Star, PenTool, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { Tenancy } from "@/lib/types";
 import { fetchApi } from "@/lib/api";
 import { formatDate, formatMoney } from "@/lib/format";
+import { DigitalAgreementModal } from "./digital-agreement-modal";
 
 export function TenancyPanel({ tenancies, onChanged }: { tenancies: Tenancy[]; onChanged: () => void }) {
+  const [agreementFor, setAgreementFor] = useState<string | null>(null);
   const [noticeFor, setNoticeFor] = useState<string | null>(null);
   const [noticeReason, setNoticeReason] = useState("");
   const [moveOutDate, setMoveOutDate] = useState("");
@@ -82,13 +84,32 @@ export function TenancyPanel({ tenancies, onChanged }: { tenancies: Tenancy[]; o
                     )}
                   </p>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex flex-wrap items-center gap-2.5">
+                  <Button
+                    variant={t.agreement_status === "SIGNED" ? "outline" : "default"}
+                    size="sm"
+                    onClick={() => setAgreementFor(t.id)}
+                    className="rounded-xl font-medium"
+                  >
+                    {t.agreement_status === "SIGNED" ? (
+                      <>
+                        <CheckCircle2 className="h-4 w-4 mr-1.5 text-emerald-500" />
+                        View Agreement
+                      </>
+                    ) : (
+                      <>
+                        <PenTool className="h-4 w-4 mr-1.5" />
+                        Review & E-Sign
+                      </>
+                    )}
+                  </Button>
                   <StatusBadge status={t.status} />
                   {t.status === "ACTIVE" && (
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => setNoticeFor(noticeFor === t.id ? null : t.id)}
+                      className="rounded-xl"
                     >
                       Serve Notice
                     </Button>
@@ -98,6 +119,7 @@ export function TenancyPanel({ tenancies, onChanged }: { tenancies: Tenancy[]; o
                       variant="outline"
                       size="sm"
                       onClick={() => setReviewFor(reviewFor === t.id ? null : t.id)}
+                      className="rounded-xl"
                     >
                       <Star className="h-4 w-4 mr-1.5" /> Leave Review
                     </Button>
@@ -162,6 +184,17 @@ export function TenancyPanel({ tenancies, onChanged }: { tenancies: Tenancy[]; o
           <Home className="h-10 w-10 text-muted-foreground/40 mx-auto mb-3" />
           <p className="text-sm text-muted-foreground">You have no tenancies yet.</p>
         </div>
+      )}
+
+      {agreementFor && (
+        <DigitalAgreementModal
+          tenancyId={agreementFor}
+          isOpen={Boolean(agreementFor)}
+          onClose={() => setAgreementFor(null)}
+          onSigned={() => {
+            onChanged();
+          }}
+        />
       )}
     </div>
   );

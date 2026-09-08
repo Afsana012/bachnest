@@ -25,6 +25,7 @@ const NAV_ITEMS = [
   { label: "Sublets", href: "/properties?type=SUBLET" },
   { label: "Mess", href: "/properties?type=MESS" },
   { label: "Hostels", href: "/properties?type=HOSTEL" },
+  { label: "Garage & Parking", href: "/parking" },
 ];
 
 export function Navbar() {
@@ -131,6 +132,17 @@ export function Navbar() {
               }`}
             >
               Roommates
+            </Link>
+
+            <Link
+              href="/parking"
+              className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                pathname.startsWith("/parking")
+                  ? "bg-muted text-foreground"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+              }`}
+            >
+              Parking
             </Link>
 
             <Link
@@ -304,6 +316,12 @@ export function Navbar() {
               className="block px-2 py-1.5 rounded-lg text-sm text-foreground hover:bg-muted transition-colors"
             >
               Roommate Match
+            </Link>
+            <Link
+              href="/parking"
+              className="block px-2 py-1.5 rounded-lg text-sm text-foreground hover:bg-muted transition-colors"
+            >
+              Garage & Parking
             </Link>
             <Link
               href="/emergency"
