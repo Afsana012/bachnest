@@ -38,6 +38,7 @@ export function PropertyManager({ properties, onChanged }: { properties: Propert
   const [parkingCctv, setParkingCctv] = useState(true);
 
   const [busy, setBusy] = useState(false);
+  const [parkingError, setParkingError] = useState<string | null>(null);
   const [editingProperty, setEditingProperty] = useState<Property | null>(null);
   const [editingRoom, setEditingRoom] = useState<Room | null>(null);
 
@@ -175,9 +176,10 @@ export function PropertyManager({ properties, onChanged }: { properties: Propert
 
   const addParkingSpace = async (propertyId: string) => {
     if (!parkingName.trim() || !parkingMonthlyRent) {
-      alert("Please provide slot name and monthly rent.");
+      setParkingError("Please provide slot name and monthly rent.");
       return;
     }
+    setParkingError(null);
     setBusy(true);
     const res = await fetchApi<ParkingSpace>(`/properties/${propertyId}/parking`, {
       method: "POST",
@@ -196,9 +198,10 @@ export function PropertyManager({ properties, onChanged }: { properties: Propert
       setParkingName("");
       setParkingMonthlyRent("");
       setParkingDailyRate("");
+      setParkingError(null);
       setShowParkingForm(false);
     } else {
-      alert(res.message || "Failed to add parking slot");
+      setParkingError(res.message || "Failed to add parking slot");
     }
   };
 
@@ -401,17 +404,32 @@ export function PropertyManager({ properties, onChanged }: { properties: Propert
                   <h5 className="text-sm font-semibold flex items-center gap-2">
                     <Car className="h-4 w-4 text-muted-foreground" /> Garage & Parking Slots
                   </h5>
-                  <Button variant="outline" size="sm" onClick={() => setShowParkingForm(!showParkingForm)}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setParkingError(null);
+                      setShowParkingForm(!showParkingForm);
+                    }}
+                  >
                     <Plus className="h-4 w-4 mr-1.5" /> Add Parking Slot
                   </Button>
                 </div>
 
                 {showParkingForm && (
                   <div className="mb-4 p-4 rounded-xl bg-muted/30 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+                    {parkingError && (
+                      <div className="sm:col-span-2 md:col-span-4 p-2.5 rounded-lg text-xs bg-destructive/10 text-destructive border border-destructive/20 font-medium">
+                        {parkingError}
+                      </div>
+                    )}
                     <Input
                       placeholder="Slot name (e.g. Ground Bay B-01)"
                       value={parkingName}
-                      onChange={(e) => setParkingName(e.target.value)}
+                      onChange={(e) => {
+                        setParkingError(null);
+                        setParkingName(e.target.value);
+                      }}
                     />
                     <select
                       value={parkingVehicleType}
@@ -425,7 +443,10 @@ export function PropertyManager({ properties, onChanged }: { properties: Propert
                       placeholder="Monthly Rent (৳)"
                       type="number"
                       value={parkingMonthlyRent}
-                      onChange={(e) => setParkingMonthlyRent(e.target.value)}
+                      onChange={(e) => {
+                        setParkingError(null);
+                        setParkingMonthlyRent(e.target.value);
+                      }}
                     />
                     <Input
                       placeholder="Daily Rate (৳, opt)"
@@ -455,7 +476,7 @@ export function PropertyManager({ properties, onChanged }: { properties: Propert
                         </label>
                       </div>
                       <Button size="sm" disabled={busy} onClick={() => addParkingSpace(property.id)}>
-                        Save Parking Slot
+                        {busy ? "Saving..." : "Save Parking Slot"}
                       </Button>
                     </div>
                   </div>
