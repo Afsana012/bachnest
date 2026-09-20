@@ -11,7 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
 import { fetchApi } from "@/lib/api";
-import { Booking, Complaint, Invoice, Property, Tenancy } from "@/lib/types";
+import { Booking, Complaint, Invoice, ParkingBooking, Property, Tenancy } from "@/lib/types";
 import { formatMoney } from "@/lib/format";
 import { OwnerSidebar, OwnerTab } from "@/components/owner/owner-sidebar";
 import { OwnerOverviewTab } from "@/components/owner/owner-overview-tab";
@@ -21,6 +21,7 @@ import { InvoiceCreator } from "@/components/owner/invoice-creator";
 import { ComplaintManager } from "@/components/owner/complaint-manager";
 import { OwnerTenancies } from "@/components/owner/owner-tenancies";
 import { OwnerNotices } from "@/components/owner/owner-notices";
+import { OwnerParking } from "@/components/owner/owner-parking";
 import { NoticeComposerModal } from "@/components/owner/notice-composer-modal";
 
 export function OwnerDashboardView() {
@@ -35,12 +36,14 @@ export function OwnerDashboardView() {
   const [tenancies, setTenancies] = useState<Tenancy[]>([]);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [complaints, setComplaints] = useState<Complaint[]>([]);
+  const [parkingBookings, setParkingBookings] = useState<ParkingBooking[]>([]);
 
   const [tabLoading, setTabLoading] = useState<Record<OwnerTab, boolean>>({
     overview: false,
     properties: true,
     bookings: true,
     tenancies: true,
+    parking: true,
     invoices: true,
     complaints: true,
     notices: false,
@@ -84,6 +87,13 @@ export function OwnerDashboardView() {
     setLoading("complaints", false);
   }, []);
 
+  const loadParkingBookings = useCallback(async () => {
+    setLoading("parking", true);
+    const res = await fetchApi<ParkingBooking[]>("/parking/owner/bookings");
+    if (res.success && res.data) setParkingBookings(res.data);
+    setLoading("parking", false);
+  }, []);
+
   const loadAll = useCallback(async () => {
     await Promise.all([
       loadProperties(),
@@ -91,8 +101,9 @@ export function OwnerDashboardView() {
       loadTenancies(),
       loadInvoices(),
       loadComplaints(),
+      loadParkingBookings(),
     ]);
-  }, [loadProperties, loadBookings, loadTenancies, loadInvoices, loadComplaints]);
+  }, [loadProperties, loadBookings, loadTenancies, loadInvoices, loadComplaints, loadParkingBookings]);
 
   useEffect(() => {
     if (!loading && (!isAuthenticated || user?.role !== "OWNER")) {
@@ -150,6 +161,10 @@ export function OwnerDashboardView() {
       title: "Building Announcements",
       subtitle: "Broadcast emergency and routine notices to your building tenants.",
     },
+    parking: {
+      title: "Garage & Parking Passes",
+      subtitle: "Track registered vehicles, active parking passes, and monthly garage revenue.",
+    },
   };
 
   const isTabLoading = tabLoading[activeTab];
@@ -166,6 +181,7 @@ export function OwnerDashboardView() {
             properties: properties.length,
             pendingBookings: pendingBookingsCount,
             tenancies: tenancies.length,
+            parkingPasses: parkingBookings.filter((b) => b.status === "ACTIVE").length,
             invoices: invoices.length,
             openComplaints: openComplaintsCount,
           }}
@@ -363,6 +379,15 @@ export function OwnerDashboardView() {
 
               {activeTab === "notices" && (
                 <OwnerNotices properties={properties} />
+              )}
+
+              {activeTab === "parking" && (
+                <OwnerParking
+                  bookings={parkingBookings}
+                  properties={properties}
+                  onChanged={loadParkingBookings}
+                  loading={isTabLoading}
+                />
               )}
             </div>
           )}

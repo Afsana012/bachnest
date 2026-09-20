@@ -506,6 +506,22 @@ export function PropertyManager({ properties, onChanged }: { properties: Propert
                             {slot.is_covered && <span>• Covered</span>}
                             {slot.has_cctv && <span>• CCTV</span>}
                           </div>
+
+                          {!slot.is_available && slot.active_booking && (
+                            <div className="mt-1.5 text-xs bg-primary/5 p-2 rounded-lg border border-primary/15 space-y-0.5">
+                              <p className="font-semibold text-foreground flex items-center gap-1.5">
+                                <span className="text-primary font-bold">Occupant:</span> {slot.active_booking.tenant_name || "Tenant"}
+                                {slot.active_booking.tenant_phone && (
+                                  <a href={`tel:${slot.active_booking.tenant_phone}`} className="text-primary hover:underline font-mono">
+                                    ({slot.active_booking.tenant_phone})
+                                  </a>
+                                )}
+                              </p>
+                              <p className="font-mono text-[11px] text-muted-foreground">
+                                Reg: <span className="font-bold text-foreground">{slot.active_booking.vehicle_registration_number}</span> • Plan: {slot.active_booking.rental_plan}
+                              </p>
+                            </div>
+                          )}
                         </div>
                         <Button
                           variant="ghost"

@@ -7,6 +7,7 @@ import {
   Building2,
   CalendarCheck,
   Users,
+  Car,
   Receipt,
   Wrench,
   Megaphone,
@@ -19,7 +20,7 @@ import { Button } from "@/components/ui/button";
 import { User } from "@/lib/types";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 
-export type OwnerTab = "overview" | "properties" | "bookings" | "tenancies" | "invoices" | "complaints" | "notices";
+export type OwnerTab = "overview" | "properties" | "bookings" | "tenancies" | "parking" | "invoices" | "complaints" | "notices";
 
 interface OwnerSidebarProps {
   user: User | null;
@@ -29,6 +30,7 @@ interface OwnerSidebarProps {
     properties: number;
     pendingBookings: number;
     tenancies: number;
+    parkingPasses: number;
     invoices: number;
     openComplaints: number;
   };
@@ -76,6 +78,12 @@ export function OwnerSidebar({
           label: "Tenants & Leases",
           icon: Users,
           count: counts.tenancies,
+        },
+        {
+          key: "parking" as OwnerTab,
+          label: "Garage & Parking",
+          icon: Car,
+          count: counts.parkingPasses,
         },
       ],
     },

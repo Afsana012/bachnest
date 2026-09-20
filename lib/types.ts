@@ -449,6 +449,7 @@ export interface ParkingSpace {
   is_available: boolean;
   created_at: string;
   updated_at: string;
+  active_booking?: ParkingBooking;
 }
 
 export interface ParkingSpaceCreate {
@@ -473,6 +474,14 @@ export interface ParkingBooking {
   created_at: string;
   updated_at: string;
   parking_space?: ParkingSpace;
+  tenant_name?: string | null;
+  tenant_phone?: string | null;
+  tenant_email?: string | null;
+  space_number_or_name?: string | null;
+  vehicle_type?: ParkingVehicleType | null;
+  property_id?: string | null;
+  property_title?: string | null;
+  property_address?: string | null;
 }
 
 export interface ParkingBookingCreate {
