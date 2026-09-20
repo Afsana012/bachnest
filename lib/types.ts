@@ -268,6 +268,23 @@ export interface Booking {
   owner_remarks?: string;
   cancellation_reason?: string;
   created_at: string;
+  property_title?: string;
+  property_address?: string;
+  area_neighborhood?: string;
+  city?: string;
+  flat_number?: string;
+  gate_closing_time?: string;
+  visitor_policy?: string;
+  room_number_or_name?: string;
+  monthly_rent?: Money;
+  security_deposit?: Money;
+  owner_id?: string;
+  owner_name?: string;
+  owner_phone?: string;
+  owner_email?: string;
+  tenant_name?: string;
+  tenant_phone?: string;
+  tenant_email?: string;
 }
 
 export interface BookingAdvancePayRequest {
@@ -510,6 +527,10 @@ export interface DigitalAgreement {
   visitor_policy?: string | null;
   signed_at?: string | null;
   signature_name?: string | null;
+  tenant_signed?: boolean;
+  owner_signed?: boolean;
+  tenant_signature?: string | null;
+  owner_signature?: string | null;
 }
 
 export type RoommateLookingType = "ROOM_WANTED" | "FLATSHARE" | "HAVE_ROOM_NEED_ROOMMATE";
@@ -537,6 +558,21 @@ export interface RoommateProfile {
   email?: string;
   created_at: string;
 }
+
+export interface RoommateMessage {
+  id: string;
+  roommate_profile_id?: string | null;
+  sender_id?: string | null;
+  recipient_user_id?: string | null;
+  sender_name: string;
+  sender_contact: string;
+  message: string;
+  reply?: string | null;
+  is_read: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
 
 export type DepositRefundStatus =
   | "REQUESTED"

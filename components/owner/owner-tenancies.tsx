@@ -11,6 +11,7 @@ import { DepositSettlementModal } from "./deposit-settlement-modal";
 import { DepositClearanceVoucherModal } from "@/components/shared/deposit-clearance-voucher-modal";
 import { ReviewSubmissionModal } from "@/components/shared/review-submission-modal";
 import { DMPVerificationModal } from "@/components/shared/dmp-verification-modal";
+import { DigitalAgreementModal } from "@/components/dashboard/digital-agreement-modal";
 
 export function OwnerTenancies({ tenancies, onChanged }: { tenancies: Tenancy[]; onChanged: () => void }) {
   const [terminatingId, setTerminatingId] = useState<string | null>(null);
@@ -18,6 +19,7 @@ export function OwnerTenancies({ tenancies, onChanged }: { tenancies: Tenancy[];
   const [voucherClaim, setVoucherClaim] = useState<DepositClaimOut | null>(null);
   const [reviewingTenancy, setReviewingTenancy] = useState<Tenancy | null>(null);
   const [dmpTenancyId, setDmpTenancyId] = useState<string | null>(null);
+  const [agreementFor, setAgreementFor] = useState<string | null>(null);
   const [claimsMap, setClaimsMap] = useState<Record<string, DepositClaimOut>>({});
 
   useEffect(() => {
@@ -82,6 +84,16 @@ export function OwnerTenancies({ tenancies, onChanged }: { tenancies: Tenancy[];
               </div>
               <div className="flex flex-wrap items-center gap-2.5">
                 <StatusBadge status={tenancy.status} />
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setAgreementFor(tenancy.id)}
+                  className="rounded-xl font-medium border-primary/30 text-primary hover:bg-primary/10"
+                >
+                  <FileText className="h-4 w-4 mr-1.5" />
+                  Digital Agreement
+                </Button>
 
                 {claim && claim.status !== "SETTLED" && (
                   <Button
@@ -190,6 +202,15 @@ export function OwnerTenancies({ tenancies, onChanged }: { tenancies: Tenancy[];
           tenancyId={dmpTenancyId}
           isOpen={Boolean(dmpTenancyId)}
           onClose={() => setDmpTenancyId(null)}
+        />
+      )}
+
+      {agreementFor && (
+        <DigitalAgreementModal
+          tenancyId={agreementFor}
+          isOpen={Boolean(agreementFor)}
+          onClose={() => setAgreementFor(null)}
+          onSigned={onChanged}
         />
       )}
     </div>

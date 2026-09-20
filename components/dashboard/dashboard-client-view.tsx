@@ -8,16 +8,17 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/use-auth";
 import { fetchApi } from "@/lib/api";
-import { Booking, Complaint, Invoice, KYCOut, ParkingBooking, Tenancy } from "@/lib/types";
+import { Booking, Complaint, Invoice, KYCOut, ParkingBooking, Tenancy, RoommateMessage } from "@/lib/types";
 import { TenancyPanel } from "@/components/dashboard/tenancy-panel";
 import { InvoicePanel } from "@/components/dashboard/invoice-panel";
 import { ComplaintPanel } from "@/components/dashboard/complaint-panel";
 import { BookingPanel } from "@/components/dashboard/booking-panel";
 import { NoticePanel } from "@/components/dashboard/notice-panel";
 import { ParkingPanel } from "@/components/dashboard/parking-panel";
+import { RoommateMessagesPanel } from "@/components/dashboard/roommate-messages-panel";
 import { TrustBadge } from "@/components/shared/trust-badge";
 
-type DashboardTab = "tenancies" | "invoices" | "complaints" | "bookings" | "notices" | "parking";
+type DashboardTab = "tenancies" | "invoices" | "complaints" | "bookings" | "notices" | "parking" | "roommates";
 
 export function DashboardClientView() {
   const router = useRouter();
@@ -27,18 +28,20 @@ export function DashboardClientView() {
   const [complaints, setComplaints] = useState<Complaint[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [parkingPasses, setParkingPasses] = useState<ParkingBooking[]>([]);
+  const [roommateMessages, setRoommateMessages] = useState<RoommateMessage[]>([]);
   const [kyc, setKyc] = useState<KYCOut | null>(null);
 
   const [activeTab, setActiveTab] = useState<DashboardTab>("tenancies");
 
   const loadDashboardData = useCallback(async () => {
-    const [tenRes, invRes, kycRes, compRes, bookRes, parkRes] = await Promise.all([
+    const [tenRes, invRes, kycRes, compRes, bookRes, parkRes, rmRes] = await Promise.all([
       fetchApi<Tenancy[]>("/tenancies/me"),
       fetchApi<Invoice[]>("/billing/invoices"),
       fetchApi<KYCOut>("/kyc/me"),
       fetchApi<Complaint[]>("/complaints"),
       fetchApi<Booking[]>("/bookings/me"),
       fetchApi<ParkingBooking[]>("/parking/me"),
+      fetchApi<RoommateMessage[]>("/roommates/messages/me"),
     ]);
 
     if (tenRes.success && tenRes.data) setTenancies(tenRes.data);
@@ -47,6 +50,7 @@ export function DashboardClientView() {
     if (compRes.success && compRes.data) setComplaints(compRes.data);
     if (bookRes.success && bookRes.data) setBookings(bookRes.data);
     if (parkRes.success && parkRes.data) setParkingPasses(parkRes.data);
+    if (rmRes.success && rmRes.data) setRoommateMessages(rmRes.data);
   }, []);
 
   useEffect(() => {
@@ -78,6 +82,7 @@ export function DashboardClientView() {
     { key: "invoices", label: "Invoices", count: invoices.length },
     { key: "complaints", label: "Maintenance", count: complaints.length },
     { key: "bookings", label: "Bookings", count: bookings.length },
+    { key: "roommates", label: "Roommate Inquiries", count: roommateMessages.length },
     { key: "parking", label: "Parking", count: parkingPasses.length },
   ];
 
@@ -244,6 +249,7 @@ export function DashboardClientView() {
               <ComplaintPanel complaints={complaints} tenancies={tenancies} onChanged={loadDashboardData} />
             )}
             {activeTab === "bookings" && <BookingPanel bookings={bookings} onChanged={loadDashboardData} />}
+            {activeTab === "roommates" && <RoommateMessagesPanel />}
             {activeTab === "parking" && <ParkingPanel />}
             {activeTab === "notices" && <NoticePanel />}
           </div>

@@ -2,13 +2,25 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { CalendarCheck, XCircle, AlertCircle, Eye, CheckCircle2, CreditCard } from "lucide-react";
+import {
+  CalendarCheck,
+  XCircle,
+  AlertCircle,
+  Eye,
+  CheckCircle2,
+  CreditCard,
+  Building2,
+  MapPin,
+  Phone,
+  MessageCircle,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { Booking } from "@/lib/types";
 import { fetchApi } from "@/lib/api";
 import { formatDate, formatMoney } from "@/lib/format";
 import { AdvancePaymentModal } from "./advance-payment-modal";
+import { LandlordContactModal } from "./landlord-contact-modal";
 
 const CANCELLABLE = new Set(["REQUESTED", "APPROVED_BY_OWNER"]);
 
@@ -18,6 +30,7 @@ export function BookingPanel({ bookings, onChanged }: { bookings: Booking[]; onC
   const [cancelReason, setCancelReason] = useState("");
   const [busy, setBusy] = useState(false);
   const [payingAdvanceBooking, setPayingAdvanceBooking] = useState<Booking | null>(null);
+  const [selectedContactBooking, setSelectedContactBooking] = useState<Booking | null>(null);
 
   const openCancelPrompt = (bookingId: string) => {
     setCancelPromptId(bookingId);
@@ -69,7 +82,16 @@ export function BookingPanel({ bookings, onChanged }: { bookings: Booking[]; onC
             <div key={b.id} className="p-5 rounded-xl border border-border bg-card shadow-sm space-y-3">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                  <h4 className="font-semibold text-foreground">Booking #{b.id.slice(0, 8)}</h4>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h4 className="font-semibold text-foreground">
+                      {b.property_title || `Booking #${b.id.slice(0, 8)}`}
+                    </h4>
+                    {b.room_number_or_name && (
+                      <span className="text-xs px-2 py-0.5 rounded-md bg-primary/10 text-primary font-medium">
+                        Room: {b.room_number_or_name}
+                      </span>
+                    )}
+                  </div>
                   <p className="text-sm text-muted-foreground mt-1">
                     Requested move-in: {formatDate(b.requested_move_in_date)} · Token deposit:{" "}
                     {formatMoney(b.token_deposit_amount)}
@@ -149,6 +171,100 @@ export function BookingPanel({ bookings, onChanged }: { bookings: Booking[]; onC
                 </div>
               )}
 
+              {/* Landlord Contact & House Details (when confirmed or approved) */}
+              {(b.visit_status === "CONFIRMED" ||
+                b.visit_status === "COMPLETED" ||
+                b.booking_status === "APPROVED_BY_OWNER" ||
+                b.booking_status === "DEPOSIT_PAID" ||
+                b.booking_status === "ACTIVE") && (
+                <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/25 space-y-2.5">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold text-emerald-950 dark:text-emerald-200 text-xs flex items-center gap-1.5">
+                          <Building2 className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+                          Landlord Contact & House Details
+                        </span>
+                        <span className="px-1.5 py-0.2 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-700 dark:text-emerald-300">
+                          Verified Owner
+                        </span>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Owner: <strong className="text-foreground">{b.owner_name || "Landlord"}</strong>
+                        {b.owner_phone && (
+                          <span> · Phone: <strong className="text-foreground">{b.owner_phone}</strong></span>
+                        )}
+                      </p>
+                      {(b.property_address || b.area_neighborhood) && (
+                        <p className="text-xs text-muted-foreground flex items-center gap-1">
+                          <MapPin className="h-3.5 w-3.5 text-destructive shrink-0" />
+                          <span>
+                            {[
+                              b.flat_number ? `Flat ${b.flat_number}` : null,
+                              b.property_address || b.area_neighborhood,
+                              b.area_neighborhood,
+                              b.city || "Dhaka",
+                            ]
+                              .filter(Boolean)
+                              .join(", ")}
+                          </span>
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-2 shrink-0">
+                      {b.owner_phone && (
+                        <Button asChild size="sm" className="h-7 px-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs">
+                          <a href={`tel:${b.owner_phone.replace(/[^0-9]/g, "")}`}>
+                            <Phone className="h-3 w-3 mr-1" /> Call
+                          </a>
+                        </Button>
+                      )}
+                      {b.owner_phone && (
+                        <Button
+                          asChild
+                          size="sm"
+                          variant="outline"
+                          className="h-7 px-2.5 rounded-lg border-emerald-500/40 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 text-xs"
+                        >
+                          <a
+                            href={`https://wa.me/${b.owner_phone.replace(/[^0-9]/g, "")}?text=${encodeURIComponent(
+                              `Assalamu Alaikum ${b.owner_name || "Landlord"}, I scheduled a visit for "${b.property_title || "your property"}" via BachNest.`
+                            )}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            <MessageCircle className="h-3 w-3 mr-1" /> WhatsApp
+                          </a>
+                        </Button>
+                      )}
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setSelectedContactBooking(b)}
+                        className="h-7 px-2.5 rounded-lg text-xs"
+                      >
+                        <MessageCircle className="h-3 w-3 mr-1" /> Address & Chat
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* If visit is scheduled but waiting confirmation, still provide contact & message option */}
+              {b.preferred_visit_date && b.visit_status === "SCHEDULED" && (
+                <div className="flex justify-end">
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setSelectedContactBooking(b)}
+                    className="text-xs text-muted-foreground hover:text-foreground h-7 px-2"
+                  >
+                    <MessageCircle className="h-3.5 w-3.5 mr-1" /> Message Landlord / View House Info
+                  </Button>
+                </div>
+              )}
+
               {cancelPromptId === b.id && (
                 <div className="pt-3 border-t border-border/60 space-y-3">
                   <div className="flex items-start gap-2 text-xs text-amber-600 dark:text-amber-400">
@@ -200,6 +316,15 @@ export function BookingPanel({ bookings, onChanged }: { bookings: Booking[]; onC
             setPayingAdvanceBooking(null);
             onChanged();
           }}
+        />
+      )}
+
+      {selectedContactBooking && (
+        <LandlordContactModal
+          booking={selectedContactBooking}
+          isOpen={!!selectedContactBooking}
+          onClose={() => setSelectedContactBooking(null)}
+          onMessageSent={onChanged}
         />
       )}
     </div>

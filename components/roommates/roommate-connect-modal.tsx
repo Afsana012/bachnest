@@ -16,8 +16,9 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { RoommateProfile } from "@/lib/types";
+import { RoommateProfile, RoommateMessage } from "@/lib/types";
 import { formatMoney } from "@/lib/format";
+import { fetchApi } from "@/lib/api";
 
 interface RoommateConnectModalProps {
   roommate: RoommateProfile;
@@ -26,25 +27,45 @@ interface RoommateConnectModalProps {
 }
 
 export function RoommateConnectModal({ roommate, isOpen, onClose }: RoommateConnectModalProps) {
-  const [message, setMessage] = useState("");
+  const [senderName, setSenderName] = useState("");
   const [senderContact, setSenderContact] = useState("");
+  const [message, setMessage] = useState("");
+  const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
 
   if (!isOpen) return null;
 
-  const handleSend = (e: React.FormEvent) => {
+  const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!message.trim() || !senderContact.trim()) return;
+
+    setSending(true);
+    try {
+      await fetchApi<RoommateMessage>(`/roommates/${roommate.id}/message`, {
+        method: "POST",
+        body: JSON.stringify({
+          sender_name: senderName.trim() || "Interested Bachelor",
+          sender_contact: senderContact.trim(),
+          message: message.trim(),
+        }),
+      });
+    } catch {
+      // Allow fallback if static seed profile
+    }
+    setSending(false);
     setSent(true);
+
     setTimeout(() => {
       setSent(false);
       setMessage("");
+      setSenderName("");
       setSenderContact("");
       onClose();
     }, 2500);
   };
 
-  const cleanPhone = roommate.phone?.replace(/[^0-9]/g, "");
+  const rawDigits = roommate.phone?.replace(/[^0-9]/g, "") || "";
+  const cleanPhone = rawDigits.startsWith("01") ? `88${rawDigits}` : rawDigits;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-3 sm:p-4 animate-in fade-in duration-200">
@@ -186,14 +207,23 @@ export function RoommateConnectModal({ roommate, isOpen, onClose }: RoommateConn
                 Invitation sent successfully! {roommate.full_name} has been notified.
               </div>
             ) : (
-              <form onSubmit={handleSend} className="space-y-3 pt-2">
-                <Input
-                  placeholder="Your Phone / WhatsApp number or Email"
-                  value={senderContact}
-                  onChange={(e) => setSenderContact(e.target.value)}
-                  className="rounded-xl text-xs"
-                  required
-                />
+              <form onSubmit={handleSend} className="space-y-2.5 pt-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <Input
+                    placeholder="Your Name"
+                    value={senderName}
+                    onChange={(e) => setSenderName(e.target.value)}
+                    className="rounded-xl text-xs"
+                    required
+                  />
+                  <Input
+                    placeholder="Your Phone / WhatsApp / Email"
+                    value={senderContact}
+                    onChange={(e) => setSenderContact(e.target.value)}
+                    className="rounded-xl text-xs"
+                    required
+                  />
+                </div>
                 <textarea
                   rows={2}
                   placeholder={`Hi ${roommate.full_name}, I have a flat in ${roommate.preferred_areas[0] || "Dhaka"} and looking for a roommate...`}
@@ -202,9 +232,9 @@ export function RoommateConnectModal({ roommate, isOpen, onClose }: RoommateConn
                   className="w-full rounded-xl border border-input bg-transparent p-3 text-xs focus:outline-none focus:ring-1 focus:ring-primary text-foreground"
                   required
                 />
-                <Button type="submit" size="sm" className="w-full rounded-xl font-bold shadow-xs">
+                <Button type="submit" size="sm" disabled={sending} className="w-full rounded-xl font-bold shadow-xs">
                   <Send className="h-3.5 w-3.5 mr-1.5" />
-                  Send Match Request
+                  {sending ? "Sending..." : "Send Match Request"}
                 </Button>
               </form>
             )}

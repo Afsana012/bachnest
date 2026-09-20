@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { CheckCircle2, XCircle, AlertCircle, Eye, CalendarCheck, Clock } from "lucide-react";
+import { CheckCircle2, XCircle, AlertCircle, Eye, CalendarCheck, Clock, Phone, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { Booking } from "@/lib/types";
@@ -13,6 +13,8 @@ export function BookingRequests({ bookings, onChanged }: { bookings: Booking[]; 
   const [rejectPromptId, setRejectPromptId] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState("");
   const [busy, setBusy] = useState(false);
+  const [replyMessages, setReplyMessages] = useState<Record<string, string>>({});
+  const [sendingReplyId, setSendingReplyId] = useState<string | null>(null);
 
   const approve = async (bookingId: string) => {
     setBusy(true);
@@ -88,6 +90,23 @@ export function BookingRequests({ bookings, onChanged }: { bookings: Booking[]; 
     }
   };
 
+  const handleReply = async (bookingId: string) => {
+    const msg = replyMessages[bookingId]?.trim();
+    if (!msg) return;
+    setSendingReplyId(bookingId);
+    const res = await fetchApi<Booking>(`/bookings/${bookingId}/message`, {
+      method: "POST",
+      body: JSON.stringify({ message: msg }),
+    });
+    setSendingReplyId(null);
+    if (res.success) {
+      setReplyMessages((prev) => ({ ...prev, [bookingId]: "" }));
+      onChanged();
+    } else {
+      alert(res.message || "Failed to send message to tenant");
+    }
+  };
+
   return (
     <div className="space-y-4">
       {bookings.length > 0 ? (
@@ -95,23 +114,54 @@ export function BookingRequests({ bookings, onChanged }: { bookings: Booking[]; 
           <div key={booking.id} className="p-5 rounded-xl border border-border bg-card shadow-sm space-y-3">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div>
-                <div className="flex items-center gap-2">
-                  <h4 className="font-semibold text-foreground">Tenant #{booking.tenant_id.slice(0, 8)}</h4>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h4 className="font-semibold text-foreground">
+                    {booking.tenant_name || `Tenant #${booking.tenant_id.slice(0, 8)}`}
+                  </h4>
                   {booking.preferred_visit_date && (
                     <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20 flex items-center gap-1">
                       <Eye className="h-3 w-3" /> Visit Requested
                     </span>
                   )}
                 </div>
+                <p className="text-xs font-semibold text-primary mt-0.5">
+                  {booking.property_title || "Residential Property"}
+                  {booking.room_number_or_name && ` · Room ${booking.room_number_or_name}`}
+                </p>
                 <p className="text-sm text-muted-foreground mt-1">
                   Wants to move in {formatDate(booking.requested_move_in_date)} · Token:{" "}
                   {formatMoney(booking.token_deposit_amount)}
                 </p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Room #{booking.room_id.slice(0, 8)}
-                  {booking.seat_id ? ` · Seat #${booking.seat_id.slice(0, 8)}` : ""} · Requested{" "}
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {booking.seat_id ? `Seat #${booking.seat_id.slice(0, 8)} · ` : ""}Requested{" "}
                   {formatDate(booking.created_at)}
                 </p>
+
+                {booking.tenant_phone && (
+                  <div className="flex flex-wrap items-center gap-2 mt-2">
+                    <span className="text-xs text-muted-foreground flex items-center gap-1">
+                      <Phone className="h-3.5 w-3.5 text-emerald-600" />
+                      {booking.tenant_phone}
+                    </span>
+                    <Button asChild size="sm" variant="outline" className="h-6 px-2 text-xs text-emerald-600 border-emerald-500/30 hover:bg-emerald-50 dark:hover:bg-emerald-950/30">
+                      <a href={`tel:${booking.tenant_phone.replace(/[^0-9]/g, "")}`}>
+                        Call Tenant
+                      </a>
+                    </Button>
+                    <Button asChild size="sm" variant="outline" className="h-6 px-2 text-xs text-emerald-600 border-emerald-500/30 hover:bg-emerald-50 dark:hover:bg-emerald-950/30">
+                      <a
+                        href={`https://wa.me/${booking.tenant_phone.replace(/[^0-9]/g, "")}?text=${encodeURIComponent(
+                          `Assalamu Alaikum ${booking.tenant_name || "Brother"}, regarding your visit/booking request for ${booking.property_title || "the room"} on BachNest...`
+                        )}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        <MessageCircle className="h-3 w-3 mr-1" /> WhatsApp
+                      </a>
+                    </Button>
+                  </div>
+                )}
+
                 {booking.owner_remarks && (
                   <p className="text-xs text-muted-foreground mt-1">Your remarks: {booking.owner_remarks}</p>
                 )}
@@ -179,9 +229,6 @@ export function BookingRequests({ bookings, onChanged }: { bookings: Booking[]; 
                       <Clock className="h-3 w-3 inline" /> {booking.visit_time_slot}
                     </span>
                   )}
-                  {booking.visit_notes && (
-                    <span className="text-muted-foreground italic"> — &ldquo;{booking.visit_notes}&rdquo;</span>
-                  )}
                 </div>
                 <span
                   className={`px-2 py-0.5 rounded-md font-semibold text-[11px] ${
@@ -200,6 +247,60 @@ export function BookingRequests({ bookings, onChanged }: { bookings: Booking[]; 
                 </span>
               </div>
             )}
+
+            {/* Conversation Log & Inquiries */}
+            <div className="p-3.5 rounded-xl bg-muted/30 border border-border/60 text-xs space-y-2.5">
+              <div className="flex items-center justify-between">
+                <span className="font-semibold text-foreground flex items-center gap-1.5">
+                  <MessageCircle className="h-3.5 w-3.5 text-primary" /> Tenant Inquiries & Direct Chat
+                </span>
+                {booking.tenant_email && <span className="text-muted-foreground text-[11px]">{booking.tenant_email}</span>}
+              </div>
+              {booking.visit_notes ? (
+                <div className="space-y-1.5 max-h-36 overflow-y-auto pr-1">
+                  {booking.visit_notes.split("\n").map((note, idx) => {
+                    const isLandlord = note.toLowerCase().includes("[landlord");
+                    return (
+                      <div
+                        key={idx}
+                        className={`p-2 rounded-lg text-xs ${
+                          isLandlord
+                            ? "bg-emerald-500/10 text-emerald-950 dark:text-emerald-200 border border-emerald-500/20 ml-4"
+                            : "bg-primary/10 text-primary dark:text-primary-foreground border border-primary/20 mr-4"
+                        }`}
+                      >
+                        {note}
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <p className="text-muted-foreground italic text-xs">No direct messages yet. Send directions or landmark below.</p>
+              )}
+              <div className="flex gap-2 pt-1">
+                <input
+                  type="text"
+                  placeholder="Send reply, gate directions, or landmark..."
+                  value={replyMessages[booking.id] || ""}
+                  onChange={(e) => setReplyMessages((prev) => ({ ...prev, [booking.id]: e.target.value }))}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault();
+                      handleReply(booking.id);
+                    }
+                  }}
+                  className="flex-1 rounded-lg border border-input bg-transparent px-3 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-primary"
+                />
+                <Button
+                  size="sm"
+                  disabled={sendingReplyId === booking.id || !replyMessages[booking.id]?.trim()}
+                  onClick={() => handleReply(booking.id)}
+                  className="h-8 px-3 rounded-lg text-xs"
+                >
+                  {sendingReplyId === booking.id ? "Sending..." : "Send"}
+                </Button>
+              </div>
+            </div>
 
             {rejectPromptId === booking.id && (
               <div className="pt-3 border-t border-border/60 space-y-3">

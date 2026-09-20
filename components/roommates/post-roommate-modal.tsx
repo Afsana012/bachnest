@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Gender, RoommateLookingType, RoommateOccupationCategory, RoommateProfile } from "@/lib/types";
 import { saveNewRoommateProfile } from "@/lib/data/roommates";
+import { fetchApi } from "@/lib/api";
 
 interface PostRoommateModalProps {
   isOpen: boolean;
@@ -40,6 +41,7 @@ export function PostRoommateModal({ isOpen, onClose, onCreated }: PostRoommateMo
   const [bio, setBio] = useState("");
   const [phone, setPhone] = useState("");
   const [phoneVisible, setPhoneVisible] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
 
   if (!isOpen) return null;
 
@@ -51,7 +53,7 @@ export function PostRoommateModal({ isOpen, onClose, onCreated }: PostRoommateMo
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!fullName.trim() || !occupation.trim() || !budget || !areasInput.trim()) {
       alert("Please fill in all mandatory fields.");
@@ -62,6 +64,34 @@ export function PostRoommateModal({ isOpen, onClose, onCreated }: PostRoommateMo
       .split(",")
       .map((a) => a.trim())
       .filter(Boolean);
+
+    setSubmitting(true);
+    try {
+      const res = await fetchApi<RoommateProfile>("/roommates", {
+        method: "POST",
+        body: JSON.stringify({
+          occupation_category: occupationCategory,
+          occupation: occupation.trim(),
+          institution_or_company: institution.trim() || "Independent",
+          preferred_areas: preferredAreas.length ? preferredAreas : ["Dhaka"],
+          budget_max: Number(budget),
+          looking_for: lookingFor,
+          move_in_date: moveInDate || "Immediate",
+          lifestyle_tags: selectedTags,
+          bio: bio.trim() || "Looking for a clean, verified accommodation and respectful flatmates.",
+          phone_visible: phoneVisible,
+        }),
+      });
+      if (res.success && res.data) {
+        saveNewRoommateProfile(res.data);
+        onCreated(res.data);
+        setSubmitting(false);
+        onClose();
+        return;
+      }
+    } catch {
+      // Fallback to local profile
+    }
 
     const newProfile: RoommateProfile = {
       id: `rm-${Date.now()}`,
@@ -87,6 +117,7 @@ export function PostRoommateModal({ isOpen, onClose, onCreated }: PostRoommateMo
 
     saveNewRoommateProfile(newProfile);
     onCreated(newProfile);
+    setSubmitting(false);
     onClose();
   };
 
@@ -286,9 +317,9 @@ export function PostRoommateModal({ isOpen, onClose, onCreated }: PostRoommateMo
             <Button type="button" variant="outline" onClick={onClose} className="rounded-xl text-xs">
               Cancel
             </Button>
-            <Button type="submit" className="rounded-xl text-xs font-bold shadow-xs">
+            <Button type="submit" disabled={submitting} className="rounded-xl text-xs font-bold shadow-xs">
               <Sparkles className="h-3.5 w-3.5 mr-1.5" />
-              Publish Roommate Ad
+              {submitting ? "Publishing..." : "Publish Roommate Ad"}
             </Button>
           </div>
         </form>

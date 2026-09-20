@@ -18,6 +18,7 @@ import { Input } from "@/components/ui/input";
 import { DigitalAgreement, Tenancy } from "@/lib/types";
 import { fetchApi } from "@/lib/api";
 import { formatDate, formatMoney } from "@/lib/format";
+import { useAuth } from "@/hooks/use-auth";
 
 interface DigitalAgreementModalProps {
   tenancyId: string;
@@ -32,6 +33,7 @@ export function DigitalAgreementModal({
   onClose,
   onSigned,
 }: DigitalAgreementModalProps) {
+  const { user } = useAuth();
   const [agreement, setAgreement] = useState<DigitalAgreement | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -40,20 +42,25 @@ export function DigitalAgreementModal({
   const [signing, setSigning] = useState(false);
   const [signError, setSignError] = useState("");
 
+  const isOwner = user?.role === "OWNER" || (agreement && user?.phone === agreement.owner_phone);
+
   const loadAgreement = useCallback(async () => {
     setLoading(true);
     setError("");
     const res = await fetchApi<DigitalAgreement>(`/tenancies/${tenancyId}/agreement`);
     if (res.success && res.data) {
       setAgreement(res.data);
-      if (!signatureName && res.data.tenant_name) {
-        setSignatureName(res.data.tenant_name);
+      const isOwnerViewer = user?.role === "OWNER" || user?.phone === res.data.owner_phone;
+      if (isOwnerViewer) {
+        setSignatureName(res.data.owner_name || user?.full_name || "");
+      } else {
+        setSignatureName(res.data.tenant_name || user?.full_name || "");
       }
     } else {
       setError(res.message || "Failed to load digital tenancy contract.");
     }
     setLoading(false);
-  }, [tenancyId, signatureName]);
+  }, [tenancyId, user]);
 
   useEffect(() => {
     if (isOpen) {
@@ -177,9 +184,20 @@ export function DigitalAgreementModal({
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 rounded-2xl bg-muted/30 border border-border/60">
                 <div className="space-y-1">
-                  <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider block">
-                    First Party (Landlord / Lessor)
-                  </span>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider block">
+                      First Party (Landlord / Lessor)
+                    </span>
+                    {agreement.owner_signed ? (
+                      <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full">
+                        ✓ E-Signed
+                      </span>
+                    ) : (
+                      <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full">
+                        Pending Signature
+                      </span>
+                    )}
+                  </div>
                   <p className="font-bold text-foreground text-sm flex items-center gap-1.5">
                     <Building2 className="h-4 w-4 text-primary" /> {agreement.owner_name}
                   </p>
@@ -187,9 +205,20 @@ export function DigitalAgreementModal({
                 </div>
 
                 <div className="space-y-1">
-                  <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider block">
-                    Second Party (Tenant / Lessee)
-                  </span>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider block">
+                      Second Party (Tenant / Lessee)
+                    </span>
+                    {agreement.tenant_signed ? (
+                      <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full">
+                        ✓ E-Signed
+                      </span>
+                    ) : (
+                      <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full">
+                        Pending Signature
+                      </span>
+                    )}
+                  </div>
                   <p className="font-bold text-foreground text-sm flex items-center gap-1.5">
                     <UserCheck className="h-4 w-4 text-primary" /> {agreement.tenant_name}
                   </p>
@@ -260,30 +289,42 @@ export function DigitalAgreementModal({
                 </div>
               </div>
 
-              <div className="pt-4 border-t border-border/80">
-                {agreement.agreement_status === "SIGNED" ? (
-                  <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/5 p-5 space-y-2">
-                    <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 font-bold text-sm">
-                      <ShieldCheck className="h-5 w-5" />
-                      Digital Signature Verified
-                    </div>
-                    <p className="text-xs font-mono text-muted-foreground">
-                      Certificate: {agreement.signature_name || `E-SIGNED BY ${agreement.tenant_name.toUpperCase()}`}
-                    </p>
-                    {agreement.signed_at && (
-                      <p className="text-xs text-muted-foreground">
-                        Timestamp: {new Date(agreement.signed_at).toUTCString()}
-                      </p>
+              <div className="pt-4 border-t border-border/80 space-y-4">
+                {/* Certificates / Signatures Display */}
+                {(agreement.tenant_signed || agreement.owner_signed) && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {agreement.owner_signed && (
+                      <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/5 p-4 space-y-1.5">
+                        <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 font-bold text-xs">
+                          <ShieldCheck className="h-4 w-4" /> Landlord E-Signature Verified
+                        </div>
+                        <p className="text-xs font-mono text-muted-foreground">
+                          {agreement.owner_signature || `E-SIGNED BY LANDLORD (${agreement.owner_name})`}
+                        </p>
+                      </div>
+                    )}
+                    {agreement.tenant_signed && (
+                      <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/5 p-4 space-y-1.5">
+                        <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 font-bold text-xs">
+                          <ShieldCheck className="h-4 w-4" /> Tenant E-Signature Verified
+                        </div>
+                        <p className="text-xs font-mono text-muted-foreground">
+                          {agreement.tenant_signature || `E-SIGNED BY TENANT (${agreement.tenant_name})`}
+                        </p>
+                      </div>
                     )}
                   </div>
-                ) : (
+                )}
+
+                {/* Signing Form: Show if current viewer has not signed yet */}
+                {((isOwner && !agreement.owner_signed) || (!isOwner && !agreement.tenant_signed)) ? (
                   <form onSubmit={handleSign} className="space-y-4 print:hidden">
                     <div className="rounded-2xl border border-primary/20 bg-primary/5 p-5 space-y-3">
                       <h4 className="font-bold text-sm text-primary flex items-center gap-2">
-                        <PenTool className="h-4 w-4" /> Execute Electronic Signature
+                        <PenTool className="h-4 w-4" /> Execute Electronic Signature as {isOwner ? "Landlord / First Party" : "Tenant / Second Party"}
                       </h4>
                       <p className="text-xs text-muted-foreground">
-                        Type your full legal name below to execute this tenancy contract electronically.
+                        Type your full legal name below to execute this tenancy contract electronically under the Information & Communication Technology laws of Bangladesh.
                       </p>
 
                       {signError && (
@@ -294,13 +335,13 @@ export function DigitalAgreementModal({
 
                       <div>
                         <label className="text-xs font-semibold text-muted-foreground block mb-1">
-                          Full Legal Name
+                          Full Legal Signature Name
                         </label>
                         <Input
                           type="text"
                           value={signatureName}
                           onChange={(e) => setSignatureName(e.target.value)}
-                          placeholder="e.g. Md. Tanvir Hasan"
+                          placeholder={isOwner ? agreement.owner_name : agreement.tenant_name}
                           required
                         />
                       </div>
@@ -313,18 +354,22 @@ export function DigitalAgreementModal({
                           className="mt-0.5 rounded border-border"
                         />
                         <span>
-                          I acknowledge that I have carefully read, understood, and agreed to all 4 clauses of this
-                          Tenancy Agreement and submit my digital signature under the Information & Communication
-                          Technology laws of Bangladesh.
+                          I acknowledge that I have carefully read, understood, and agreed to all clauses of this Tenancy Agreement and hereby execute my binding digital signature.
                         </span>
                       </label>
 
                       <Button type="submit" disabled={signing} className="w-full rounded-xl font-bold mt-2 shadow-xs">
                         {signing ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                        Confirm & E-Sign Agreement
+                        Confirm & E-Sign as {isOwner ? "Landlord" : "Tenant"}
                       </Button>
                     </div>
                   </form>
+                ) : (
+                  agreement.agreement_status === "SIGNED" && (
+                    <div className="p-3 text-center text-xs text-emerald-600 dark:text-emerald-400 font-semibold bg-emerald-500/10 rounded-xl">
+                      ✓ You have executed your signature on this Tenancy Agreement.
+                    </div>
+                  )
                 )}
               </div>
             </div>

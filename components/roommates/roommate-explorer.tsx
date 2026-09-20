@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   Users,
   Search,
@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Gender, RoommateLookingType, RoommateProfile } from "@/lib/types";
 import { formatMoney, toNumber } from "@/lib/format";
+import { fetchApi } from "@/lib/api";
 import {
   calculateCompatibilityScore,
   getStoredRoommates,
@@ -58,6 +59,25 @@ export function RoommateExplorer() {
 
   const [selectedRoommate, setSelectedRoommate] = useState<RoommateProfile | null>(null);
   const [showPostModal, setShowPostModal] = useState(false);
+
+  useEffect(() => {
+    async function loadBackendRoommates() {
+      try {
+        const res = await fetchApi<RoommateProfile[]>("/roommates");
+        if (res.success && Array.isArray(res.data) && res.data.length > 0) {
+          const liveList = res.data;
+          setRoommates((prev) => {
+            const liveIds = new Set(liveList.map((r) => r.id));
+            const remaining = prev.filter((p) => !liveIds.has(p.id));
+            return [...liveList, ...remaining];
+          });
+        }
+      } catch {
+        // keep stored bachelors
+      }
+    }
+    loadBackendRoommates();
+  }, []);
 
   const toggleHabitTag = (tag: string) => {
     if (selectedHabitTags.includes(tag)) {

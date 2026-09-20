@@ -87,12 +87,7 @@ export function TenancyPanel({ tenancies, onChanged }: { tenancies: Tenancy[]; o
                       {formatMoney(t.agreed_security_deposit)}
                     </p>
                     <p className="text-xs text-muted-foreground mt-1">
-                      Agreement status: {t.agreement_status}
-                      {t.digital_agreement_url && (
-                        <a href={t.digital_agreement_url} target="_blank" rel="noreferrer" className="ml-2 text-primary hover:underline">
-                          View agreement
-                        </a>
-                      )}
+                      Agreement status: <span className="font-semibold text-foreground">{t.agreement_status}</span>
                     </p>
                   </div>
                   <div className="flex flex-wrap items-center gap-2.5">
