@@ -3,11 +3,24 @@
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Plus } from "lucide-react";
+import {
+  Building2,
+  TrendingUp,
+  Users,
+  AlertCircle,
+  Menu,
+  Plus,
+  Megaphone,
+  CheckCircle2,
+  Sparkles,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
 import { fetchApi } from "@/lib/api";
 import { Booking, Complaint, Invoice, Property, Tenancy } from "@/lib/types";
+import { formatMoney } from "@/lib/format";
+import { OwnerSidebar, OwnerTab } from "@/components/owner/owner-sidebar";
+import { OwnerOverviewTab } from "@/components/owner/owner-overview-tab";
 import { PropertyManager } from "@/components/owner/property-manager";
 import { BookingRequests } from "@/components/owner/booking-requests";
 import { InvoiceCreator } from "@/components/owner/invoice-creator";
@@ -15,14 +28,12 @@ import { ComplaintManager } from "@/components/owner/complaint-manager";
 import { OwnerTenancies } from "@/components/owner/owner-tenancies";
 import { OwnerNotices } from "@/components/owner/owner-notices";
 import { NoticeComposerModal } from "@/components/owner/notice-composer-modal";
-import { Megaphone } from "lucide-react";
-
-type OwnerTab = "properties" | "bookings" | "tenancies" | "invoices" | "complaints" | "notices";
 
 export function OwnerDashboardView() {
   const router = useRouter();
-  const { user, isAuthenticated, loading } = useAuth();
-  const [activeTab, setActiveTab] = useState<OwnerTab>("properties");
+  const { user, isAuthenticated, loading, logout } = useAuth();
+  const [activeTab, setActiveTab] = useState<OwnerTab>("overview");
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isNoticeComposerOpen, setIsNoticeComposerOpen] = useState(false);
 
   const [properties, setProperties] = useState<Property[]>([]);
@@ -31,8 +42,8 @@ export function OwnerDashboardView() {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [complaints, setComplaints] = useState<Complaint[]>([]);
 
-  // Per-tab loading state so only the active tab shows a spinner on refresh
   const [tabLoading, setTabLoading] = useState<Record<OwnerTab, boolean>>({
+    overview: false,
     properties: true,
     bookings: true,
     tenancies: true,
@@ -79,7 +90,6 @@ export function OwnerDashboardView() {
     setLoading("complaints", false);
   }, []);
 
-  // Load all tabs on initial mount in parallel (background, non-blocking)
   const loadAll = useCallback(async () => {
     await Promise.all([
       loadProperties(),
@@ -103,111 +113,298 @@ export function OwnerDashboardView() {
 
   if (loading) {
     return (
-      <div className="container mx-auto flex-1 flex items-center justify-center py-20">
-        <div className="h-6 w-6 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+      <div className="container mx-auto flex-1 flex items-center justify-center py-24">
+        <div className="h-8 w-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
       </div>
     );
   }
 
   const pendingBookingsCount = bookings.filter((b) => b.booking_status === "REQUESTED").length;
+  const openComplaintsCount = complaints.filter((c) => c.status !== "RESOLVED").length;
+  const activeTenancies = tenancies.filter((t) => t.status === "ACTIVE");
+  const monthlyExpectedRevenue = activeTenancies.reduce(
+    (sum, t) => sum + Number(t.agreed_monthly_rent || 0),
+    0
+  );
 
-  const tabs: Array<{ key: OwnerTab; label: string; count: number }> = [
-    { key: "properties", label: "My Properties", count: properties.length },
-    { key: "bookings", label: "Booking Requests", count: pendingBookingsCount },
-    { key: "tenancies", label: "Tenants", count: tenancies.length },
-    { key: "invoices", label: "Invoices", count: invoices.length },
-    { key: "complaints", label: "Complaints", count: complaints.length },
-    { key: "notices", label: "Building Notices", count: 0 },
-  ];
+  const tabTitles: Record<OwnerTab, { title: string; subtitle: string }> = {
+    overview: {
+      title: "Portfolio Overview",
+      subtitle: "Live performance, occupancy, financial metrics, and immediate alerts.",
+    },
+    properties: {
+      title: "My Properties & Units",
+      subtitle: "Add apartments, configure single/shared rooms, and manage parking slots.",
+    },
+    bookings: {
+      title: "Booking Requests & Schedule",
+      subtitle: "Review prospective tenant profiles, confirm visits, and accept bookings.",
+    },
+    tenancies: {
+      title: "Tenants & Agreements",
+      subtitle: "Active leases, dual e-signature contracts, deposit refunds, and DMP police forms.",
+    },
+    invoices: {
+      title: "Rent Billing & Invoices",
+      subtitle: "Generate monthly rent bills, track payments, and manage clearance vouchers.",
+    },
+    complaints: {
+      title: "Maintenance & Support",
+      subtitle: "Tenant maintenance issues with tracked SLA resolution times.",
+    },
+    notices: {
+      title: "Building Announcements",
+      subtitle: "Broadcast emergency and routine notices to your building tenants.",
+    },
+  };
 
   const isTabLoading = tabLoading[activeTab];
 
   return (
-    <div className="container mx-auto max-w-6xl px-4 sm:px-6">
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
-        <div>
-          <h1 className="text-3xl font-extrabold tracking-tight">Owner Hub</h1>
-          <p className="text-sm text-muted-foreground mt-1">Manage listings, tenants, billing, and maintenance.</p>
-        </div>
-        <div className="flex items-center gap-3">
-          <Button
-            variant="outline"
-            onClick={() => setIsNoticeComposerOpen(true)}
-            className="rounded-xl shrink-0"
-            disabled={properties.length === 0}
-          >
-            <Megaphone className="h-4 w-4 mr-1.5 text-primary" /> Broadcast Notice
-          </Button>
-          <Button onClick={() => router.push("/dashboard/properties/new")} className="rounded-xl shrink-0">
-            <Plus className="h-4 w-4 mr-1.5" /> Post New Property
-          </Button>
-        </div>
-      </div>
+    <div className="container mx-auto max-w-7xl px-3 sm:px-6">
+      <div className="flex flex-col lg:flex-row gap-6 lg:gap-8 items-start">
+        {/* Left Responsive Sidebar */}
+        <OwnerSidebar
+          user={user}
+          activeTab={activeTab}
+          onSelectTab={setActiveTab}
+          counts={{
+            properties: properties.length,
+            pendingBookings: pendingBookingsCount,
+            tenancies: tenancies.length,
+            invoices: invoices.length,
+            openComplaints: openComplaintsCount,
+          }}
+          isMobileOpen={isMobileSidebarOpen}
+          onCloseMobile={() => setIsMobileSidebarOpen(false)}
+          onOpenNoticeComposer={() => setIsNoticeComposerOpen(true)}
+          onLogout={logout}
+        />
 
-      <div className="flex items-center gap-6 border-b border-border mb-8 overflow-x-auto">
-        {tabs.map((tab) => (
-          <button
-            key={tab.key}
-            onClick={() => setActiveTab(tab.key)}
-            className={`pb-3 text-sm font-medium transition-all whitespace-nowrap relative ${
-              activeTab === tab.key
-                ? "text-foreground border-b-2 border-foreground"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            {tab.label}
-            {tab.count > 0 && (
-              <span className={`ml-2 rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${
-                tab.key === "bookings" && pendingBookingsCount > 0
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-muted text-muted-foreground"
-              }`}>
-                {tab.count}
-              </span>
-            )}
-          </button>
-        ))}
-      </div>
-
-      {isTabLoading ? (
-        <div className="flex items-center justify-center h-48">
-          <div className="h-6 w-6 rounded-full border-2 border-primary border-t-transparent animate-spin" />
-        </div>
-      ) : (
-        <div className="space-y-6">
-          {activeTab === "properties" &&
-            (properties.length > 0 ? (
-              <PropertyManager properties={properties} onChanged={loadProperties} />
-            ) : (
-              <div className="py-16 text-center rounded-2xl border border-dashed border-border bg-card">
-                <p className="text-sm text-muted-foreground">
-                  You have no listings yet.{" "}
-                  <Link href="/dashboard/properties/new" className="text-primary hover:underline">
-                    Post your first property
-                  </Link>{" "}
-                  to start receiving bookings.
+        {/* Right Main Dashboard Workspace */}
+        <div className="flex-1 w-full min-w-0 space-y-6">
+          {/* Top Header Bar */}
+          <div className="p-4 sm:p-6 rounded-3xl border border-border bg-card shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setIsMobileSidebarOpen(true)}
+                className="lg:hidden p-2 rounded-xl border border-border bg-muted/40 hover:bg-muted text-foreground transition-colors"
+                aria-label="Open sidebar menu"
+              >
+                <Menu className="h-5 w-5" />
+              </button>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h1 className="text-xl sm:text-2xl font-black tracking-tight text-foreground">
+                    {tabTitles[activeTab].title}
+                  </h1>
+                  <span className="hidden sm:inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-primary/10 text-primary border border-primary/20">
+                    <Sparkles className="h-3 w-3" /> Landlord Portal
+                  </span>
+                </div>
+                <p className="text-xs text-muted-foreground mt-0.5 max-w-xl">
+                  {tabTitles[activeTab].subtitle}
                 </p>
               </div>
-            ))}
+            </div>
 
-          {activeTab === "bookings" && (
-            <BookingRequests bookings={bookings} onChanged={loadBookings} />
-          )}
-          {activeTab === "tenancies" && (
-            <OwnerTenancies tenancies={tenancies} onChanged={loadTenancies} />
-          )}
-          {activeTab === "invoices" && (
-            <InvoiceCreator tenancies={tenancies} invoices={invoices} onChanged={loadInvoices} />
-          )}
-          {activeTab === "complaints" && (
-            <ComplaintManager complaints={complaints} onChanged={loadComplaints} />
-          )}
-          {activeTab === "notices" && (
-            <OwnerNotices properties={properties} />
+            {/* Header Right Action Buttons */}
+            <div className="flex items-center gap-2 shrink-0">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsNoticeComposerOpen(true)}
+                disabled={properties.length === 0}
+                className="rounded-xl text-xs font-semibold h-9"
+              >
+                <Megaphone className="h-3.5 w-3.5 mr-1.5 text-primary" />
+                <span className="hidden sm:inline">Broadcast</span> Notice
+              </Button>
+              <Button
+                asChild
+                size="sm"
+                className="rounded-xl text-xs font-bold h-9 shadow-xs bg-primary text-primary-foreground hover:bg-primary/90"
+              >
+                <Link href="/dashboard/properties/new">
+                  <Plus className="h-3.5 w-3.5 mr-1" />
+                  <span className="hidden sm:inline">Post</span> Property
+                </Link>
+              </Button>
+            </div>
+          </div>
+
+          {/* 4-KPI Metric Intelligence Bar */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            {/* KPI 1: Monthly Expected Rent */}
+            <div
+              onClick={() => setActiveTab("invoices")}
+              className="p-4 rounded-2xl border border-border bg-card hover:border-primary/40 transition-all cursor-pointer shadow-xs space-y-1.5"
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
+                  Monthly Rent
+                </span>
+                <div className="h-7 w-7 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                  <TrendingUp className="h-3.5 w-3.5" />
+                </div>
+              </div>
+              <div className="text-lg sm:text-xl font-black text-foreground">
+                {formatMoney(monthlyExpectedRevenue)}
+              </div>
+              <p className="text-[11px] text-muted-foreground truncate">
+                From {activeTenancies.length} active tenancy lease(s)
+              </p>
+            </div>
+
+            {/* KPI 2: Total Properties */}
+            <div
+              onClick={() => setActiveTab("properties")}
+              className="p-4 rounded-2xl border border-border bg-card hover:border-primary/40 transition-all cursor-pointer shadow-xs space-y-1.5"
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
+                  Properties
+                </span>
+                <div className="h-7 w-7 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+                  <Building2 className="h-3.5 w-3.5" />
+                </div>
+              </div>
+              <div className="text-lg sm:text-xl font-black text-foreground">
+                {properties.length}
+              </div>
+              <p className="text-[11px] text-muted-foreground truncate">
+                {properties.filter((p) => p.is_published).length} Live on BachNest
+              </p>
+            </div>
+
+            {/* KPI 3: Active Tenants */}
+            <div
+              onClick={() => setActiveTab("tenancies")}
+              className="p-4 rounded-2xl border border-border bg-card hover:border-primary/40 transition-all cursor-pointer shadow-xs space-y-1.5"
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
+                  Active Tenants
+                </span>
+                <div className="h-7 w-7 rounded-xl bg-violet-500/10 text-violet-600 dark:text-violet-400 flex items-center justify-center">
+                  <Users className="h-3.5 w-3.5" />
+                </div>
+              </div>
+              <div className="text-lg sm:text-xl font-black text-foreground">
+                {activeTenancies.length}
+              </div>
+              <p className="text-[11px] text-muted-foreground truncate">
+                Current occupied residents
+              </p>
+            </div>
+
+            {/* KPI 4: Pending Action Items */}
+            <div
+              onClick={() =>
+                setActiveTab(pendingBookingsCount > 0 ? "bookings" : openComplaintsCount > 0 ? "complaints" : "overview")
+              }
+              className={`p-4 rounded-2xl border transition-all cursor-pointer shadow-xs space-y-1.5 ${
+                pendingBookingsCount > 0 || openComplaintsCount > 0
+                  ? "bg-amber-500/10 border-amber-500/30 hover:border-amber-500/50"
+                  : "bg-card border-border hover:border-primary/40"
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
+                  Attention Needed
+                </span>
+                <div
+                  className={`h-7 w-7 rounded-xl flex items-center justify-center ${
+                    pendingBookingsCount > 0 || openComplaintsCount > 0
+                      ? "bg-amber-500/20 text-amber-600 dark:text-amber-400"
+                      : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                  }`}
+                >
+                  {pendingBookingsCount > 0 || openComplaintsCount > 0 ? (
+                    <AlertCircle className="h-3.5 w-3.5" />
+                  ) : (
+                    <CheckCircle2 className="h-3.5 w-3.5" />
+                  )}
+                </div>
+              </div>
+              <div className="text-lg sm:text-xl font-black text-foreground">
+                {pendingBookingsCount + openComplaintsCount}
+              </div>
+              <p className="text-[11px] text-muted-foreground truncate">
+                {pendingBookingsCount > 0
+                  ? `${pendingBookingsCount} booking(s) awaiting review`
+                  : openComplaintsCount > 0
+                    ? `${openComplaintsCount} maintenance ticket(s)`
+                    : "All clear & up to date"}
+              </p>
+            </div>
+          </div>
+
+          {/* Active Tab Content Area */}
+          {isTabLoading ? (
+            <div className="flex items-center justify-center h-48">
+              <div className="h-6 w-6 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+            </div>
+          ) : (
+            <div className="animate-in fade-in duration-150">
+              {activeTab === "overview" && (
+                <OwnerOverviewTab
+                  properties={properties}
+                  bookings={bookings}
+                  tenancies={tenancies}
+                  invoices={invoices}
+                  complaints={complaints}
+                  onSelectTab={setActiveTab}
+                  onOpenNoticeComposer={() => setIsNoticeComposerOpen(true)}
+                />
+              )}
+
+              {activeTab === "properties" &&
+                (properties.length > 0 ? (
+                  <PropertyManager properties={properties} onChanged={loadProperties} />
+                ) : (
+                  <div className="py-16 text-center rounded-3xl border border-dashed border-border bg-card space-y-3">
+                    <Building2 className="h-10 w-10 mx-auto text-muted-foreground/60" />
+                    <div>
+                      <h4 className="font-bold text-sm text-foreground">You have no listings yet</h4>
+                      <p className="text-xs text-muted-foreground mt-1 max-w-sm mx-auto">
+                        Post your first residential property or vacant seat to start receiving verified bachelor bookings.
+                      </p>
+                    </div>
+                    <Button asChild size="sm" className="rounded-xl font-bold">
+                      <Link href="/dashboard/properties/new">
+                        <Plus className="h-4 w-4 mr-1.5" /> Post Your First Property
+                      </Link>
+                    </Button>
+                  </div>
+                ))}
+
+              {activeTab === "bookings" && (
+                <BookingRequests bookings={bookings} onChanged={loadBookings} />
+              )}
+
+              {activeTab === "tenancies" && (
+                <OwnerTenancies tenancies={tenancies} onChanged={loadTenancies} />
+              )}
+
+              {activeTab === "invoices" && (
+                <InvoiceCreator tenancies={tenancies} invoices={invoices} onChanged={loadInvoices} />
+              )}
+
+              {activeTab === "complaints" && (
+                <ComplaintManager complaints={complaints} onChanged={loadComplaints} />
+              )}
+
+              {activeTab === "notices" && (
+                <OwnerNotices properties={properties} />
+              )}
+            </div>
           )}
         </div>
-      )}
+      </div>
 
+      {/* Broadcast Notice Modal */}
       <NoticeComposerModal
         properties={properties}
         isOpen={isNoticeComposerOpen}
