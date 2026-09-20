@@ -14,9 +14,9 @@ export function PublicProfileView({ user, reviews }: { user: User; reviews: Revi
       <Card className="rounded-3xl border-border bg-card p-8 mb-8">
         <CardContent className="p-0">
           <div className="flex flex-col sm:flex-row sm:items-center gap-6">
-            <div className="h-20 w-20 rounded-full bg-muted flex items-center justify-center text-muted-foreground overflow-hidden shrink-0">
+            <div className="relative h-20 w-20 rounded-full bg-muted flex items-center justify-center text-muted-foreground overflow-hidden shrink-0">
               {user.avatar_url ? (
-                <Image src={user.avatar_url} alt={user.full_name} fill className="object-cover" />
+                <Image src={user.avatar_url} alt={user.full_name} fill unoptimized className="object-cover" />
               ) : (
                 <UserCircle className="h-11 w-11" />
               )}

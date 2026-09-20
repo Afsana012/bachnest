@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import {
   LayoutDashboard,
   Building2,
@@ -110,8 +111,12 @@ export function OwnerSidebar({
         {/* Owner Profile Header */}
         <div className="flex items-center justify-between pb-4 border-b border-border/70">
           <div className="flex items-center gap-3 min-w-0">
-            <div className="h-11 w-11 rounded-2xl bg-primary/10 text-primary border border-primary/20 flex items-center justify-center font-black text-lg shrink-0 shadow-xs">
-              {user?.full_name?.charAt(0).toUpperCase() || "O"}
+            <div className="relative h-11 w-11 rounded-2xl bg-primary/10 text-primary border border-primary/20 flex items-center justify-center font-black text-lg shrink-0 shadow-xs overflow-hidden">
+              {user?.avatar_url ? (
+                <Image src={user.avatar_url} alt={user.full_name || "Owner"} fill unoptimized className="object-cover" />
+              ) : (
+                user?.full_name?.charAt(0).toUpperCase() || "O"
+              )}
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-1.5">

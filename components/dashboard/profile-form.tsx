@@ -82,9 +82,9 @@ export function ProfileForm() {
 
       <form onSubmit={saveProfile} className="rounded-2xl border border-border bg-card p-6 shadow-sm space-y-5">
         <div className="flex items-center gap-4">
-          <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center text-muted-foreground overflow-hidden shrink-0">
+          <div className="relative h-16 w-16 rounded-full bg-muted flex items-center justify-center text-muted-foreground overflow-hidden shrink-0">
             {avatarUrl ? (
-              <Image src={avatarUrl} alt={user.full_name} fill className="object-cover" />
+              <Image src={avatarUrl} alt={user.full_name} fill unoptimized className="object-cover" />
             ) : (
               <UserCircle className="h-9 w-9" />
             )}

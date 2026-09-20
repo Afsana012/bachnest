@@ -181,8 +181,12 @@ export function Navbar() {
                 onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                 className="flex items-center gap-2 p-1 rounded-full border border-border bg-muted/40 hover:bg-muted transition-colors"
               >
-                <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground font-semibold text-xs">
-                  {user.full_name?.[0]?.toUpperCase() || "U"}
+                <div className="relative flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground font-semibold text-xs overflow-hidden shrink-0">
+                  {user.avatar_url ? (
+                    <Image src={user.avatar_url} alt={user.full_name || "User"} fill unoptimized className="object-cover" />
+                  ) : (
+                    user.full_name?.[0]?.toUpperCase() || "U"
+                  )}
                 </div>
                 <span className="hidden md:inline-block text-xs font-medium pr-1 text-foreground">
                   {user.full_name}

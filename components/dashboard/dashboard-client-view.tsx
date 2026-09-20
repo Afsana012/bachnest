@@ -166,9 +166,9 @@ export function DashboardClientView() {
         <div className="lg:col-span-4 space-y-6">
           <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
             <div className="flex items-center gap-4 mb-6">
-              <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center text-muted-foreground overflow-hidden">
+              <div className="relative h-12 w-12 rounded-full bg-muted flex items-center justify-center text-muted-foreground overflow-hidden shrink-0">
                 {user?.avatar_url ? (
-                  <Image src={user.avatar_url} alt={user.full_name} fill className="object-cover" />
+                  <Image src={user.avatar_url} alt={user.full_name} fill unoptimized className="object-cover" />
                 ) : (
                   <UserCircle className="h-7 w-7" />
                 )}
