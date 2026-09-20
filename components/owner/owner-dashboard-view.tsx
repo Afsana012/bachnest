@@ -4,15 +4,9 @@ import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
-  Building2,
-  TrendingUp,
-  Users,
-  AlertCircle,
   Menu,
   Plus,
   Megaphone,
-  CheckCircle2,
-  Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
@@ -199,9 +193,6 @@ export function OwnerDashboardView() {
                   <h1 className="text-xl sm:text-2xl font-black tracking-tight text-foreground">
                     {tabTitles[activeTab].title}
                   </h1>
-                  <span className="hidden sm:inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-primary/10 text-primary border border-primary/20">
-                    <Sparkles className="h-3 w-3" /> Landlord Portal
-                  </span>
                 </div>
                 <p className="text-xs text-muted-foreground mt-0.5 max-w-xl">
                   {tabTitles[activeTab].subtitle}
@@ -239,62 +230,47 @@ export function OwnerDashboardView() {
             {/* KPI 1: Monthly Expected Rent */}
             <div
               onClick={() => setActiveTab("invoices")}
-              className="p-4 rounded-2xl border border-border bg-card hover:border-primary/40 transition-all cursor-pointer shadow-xs space-y-1.5"
+              className="p-4 rounded-xl border border-border bg-card hover:border-primary/50 transition-colors cursor-pointer space-y-1"
             >
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
-                  Monthly Rent
-                </span>
-                <div className="h-7 w-7 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
-                  <TrendingUp className="h-3.5 w-3.5" />
-                </div>
+              <div className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+                Monthly Rent
               </div>
-              <div className="text-lg sm:text-xl font-black text-foreground">
+              <div className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
                 {formatMoney(monthlyExpectedRevenue)}
               </div>
-              <p className="text-[11px] text-muted-foreground truncate">
-                From {activeTenancies.length} active tenancy lease(s)
+              <p className="text-xs text-muted-foreground truncate">
+                {activeTenancies.length} active lease{activeTenancies.length === 1 ? "" : "s"}
               </p>
             </div>
 
             {/* KPI 2: Total Properties */}
             <div
               onClick={() => setActiveTab("properties")}
-              className="p-4 rounded-2xl border border-border bg-card hover:border-primary/40 transition-all cursor-pointer shadow-xs space-y-1.5"
+              className="p-4 rounded-xl border border-border bg-card hover:border-primary/50 transition-colors cursor-pointer space-y-1"
             >
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
-                  Properties
-                </span>
-                <div className="h-7 w-7 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center">
-                  <Building2 className="h-3.5 w-3.5" />
-                </div>
+              <div className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+                Properties
               </div>
-              <div className="text-lg sm:text-xl font-black text-foreground">
+              <div className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
                 {properties.length}
               </div>
-              <p className="text-[11px] text-muted-foreground truncate">
-                {properties.filter((p) => p.is_published).length} Live on BachNest
+              <p className="text-xs text-muted-foreground truncate">
+                {properties.filter((p) => p.is_published).length} live on platform
               </p>
             </div>
 
             {/* KPI 3: Active Tenants */}
             <div
               onClick={() => setActiveTab("tenancies")}
-              className="p-4 rounded-2xl border border-border bg-card hover:border-primary/40 transition-all cursor-pointer shadow-xs space-y-1.5"
+              className="p-4 rounded-xl border border-border bg-card hover:border-primary/50 transition-colors cursor-pointer space-y-1"
             >
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
-                  Active Tenants
-                </span>
-                <div className="h-7 w-7 rounded-xl bg-violet-500/10 text-violet-600 dark:text-violet-400 flex items-center justify-center">
-                  <Users className="h-3.5 w-3.5" />
-                </div>
+              <div className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+                Active Tenants
               </div>
-              <div className="text-lg sm:text-xl font-black text-foreground">
+              <div className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
                 {activeTenancies.length}
               </div>
-              <p className="text-[11px] text-muted-foreground truncate">
+              <p className="text-xs text-muted-foreground truncate">
                 Current occupied residents
               </p>
             </div>
@@ -304,39 +280,29 @@ export function OwnerDashboardView() {
               onClick={() =>
                 setActiveTab(pendingBookingsCount > 0 ? "bookings" : openComplaintsCount > 0 ? "complaints" : "overview")
               }
-              className={`p-4 rounded-2xl border transition-all cursor-pointer shadow-xs space-y-1.5 ${
+              className={`p-4 rounded-xl border transition-colors cursor-pointer space-y-1 ${
                 pendingBookingsCount > 0 || openComplaintsCount > 0
-                  ? "bg-amber-500/10 border-amber-500/30 hover:border-amber-500/50"
-                  : "bg-card border-border hover:border-primary/40"
+                  ? "bg-amber-500/5 border-amber-500/30 hover:border-amber-500/60"
+                  : "bg-card border-border hover:border-primary/50"
               }`}
             >
               <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
+                <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
                   Attention Needed
                 </span>
-                <div
-                  className={`h-7 w-7 rounded-xl flex items-center justify-center ${
-                    pendingBookingsCount > 0 || openComplaintsCount > 0
-                      ? "bg-amber-500/20 text-amber-600 dark:text-amber-400"
-                      : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
-                  }`}
-                >
-                  {pendingBookingsCount > 0 || openComplaintsCount > 0 ? (
-                    <AlertCircle className="h-3.5 w-3.5" />
-                  ) : (
-                    <CheckCircle2 className="h-3.5 w-3.5" />
-                  )}
-                </div>
+                {(pendingBookingsCount > 0 || openComplaintsCount > 0) && (
+                  <span className="h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
+                )}
               </div>
-              <div className="text-lg sm:text-xl font-black text-foreground">
+              <div className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
                 {pendingBookingsCount + openComplaintsCount}
               </div>
-              <p className="text-[11px] text-muted-foreground truncate">
+              <p className="text-xs text-muted-foreground truncate">
                 {pendingBookingsCount > 0
                   ? `${pendingBookingsCount} booking(s) awaiting review`
                   : openComplaintsCount > 0
                     ? `${openComplaintsCount} maintenance ticket(s)`
-                    : "All clear & up to date"}
+                    : "All clear"}
               </p>
             </div>
           </div>
@@ -364,8 +330,7 @@ export function OwnerDashboardView() {
                 (properties.length > 0 ? (
                   <PropertyManager properties={properties} onChanged={loadProperties} />
                 ) : (
-                  <div className="py-16 text-center rounded-3xl border border-dashed border-border bg-card space-y-3">
-                    <Building2 className="h-10 w-10 mx-auto text-muted-foreground/60" />
+                  <div className="py-16 text-center rounded-2xl border border-dashed border-border bg-card space-y-3">
                     <div>
                       <h4 className="font-bold text-sm text-foreground">You have no listings yet</h4>
                       <p className="text-xs text-muted-foreground mt-1 max-w-sm mx-auto">
@@ -374,7 +339,7 @@ export function OwnerDashboardView() {
                     </div>
                     <Button asChild size="sm" className="rounded-xl font-bold">
                       <Link href="/dashboard/properties/new">
-                        <Plus className="h-4 w-4 mr-1.5" /> Post Your First Property
+                        <Plus className="h-4 w-4 mr-1.5" /> Post First Property
                       </Link>
                     </Button>
                   </div>
