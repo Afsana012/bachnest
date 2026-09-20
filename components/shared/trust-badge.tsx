@@ -30,7 +30,10 @@ export function TrustBadge({
   let tierLabel = "Verified Member";
   let tierColor = "border-blue-500/30 bg-blue-500/10 text-blue-700 dark:text-blue-400";
 
-  if (trustScore >= 90) {
+  if (userRole === "ADMIN" || userRole === "SUPER_ADMIN") {
+    tierLabel = "Platform Admin";
+    tierColor = "border-purple-500/30 bg-purple-500/10 text-purple-700 dark:text-purple-400";
+  } else if (trustScore >= 90) {
     tierLabel = userRole === "OWNER" ? "Super-Host Landlord" : "Platinum Bachelor";
     tierColor = "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400";
   } else if (trustScore >= 70) {
@@ -57,14 +60,22 @@ export function TrustBadge({
         <div>
           <div className="flex items-center gap-1.5">
             <h4 className="font-bold text-sm leading-tight">{tierLabel}</h4>
-            {kyc && (
-              <span className="inline-flex items-center gap-0.5 rounded px-1.5 py-0.2 text-[10px] font-semibold bg-emerald-600/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                <CheckCircle2 className="h-2.5 w-2.5" /> NID Verified
+            {userRole === "ADMIN" || userRole === "SUPER_ADMIN" ? (
+              <span className="inline-flex items-center gap-0.5 rounded px-1.5 py-0.2 text-[10px] font-semibold bg-purple-600/10 text-purple-600 dark:text-purple-400 border border-purple-500/20">
+                <CheckCircle2 className="h-2.5 w-2.5" /> Platform Governance
               </span>
+            ) : (
+              kyc && (
+                <span className="inline-flex items-center gap-0.5 rounded px-1.5 py-0.2 text-[10px] font-semibold bg-emerald-600/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                  <CheckCircle2 className="h-2.5 w-2.5" /> NID Verified
+                </span>
+              )
             )}
           </div>
           <p className="text-xs opacity-85 mt-0.5">
-            BachNest Two-Way Reputation & Trust Framework
+            {userRole === "ADMIN" || userRole === "SUPER_ADMIN"
+              ? "BachNest System Oversight & Platform Security"
+              : "BachNest Two-Way Reputation & Trust Framework"}
           </p>
         </div>
       </div>

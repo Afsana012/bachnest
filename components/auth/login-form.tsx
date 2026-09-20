@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { fetchApi, saveTokens } from "@/lib/api";
 import { TokenPair } from "@/lib/types";
+import { refreshUser } from "@/hooks/use-auth";
 
 export function LoginForm() {
   const router = useRouter();
@@ -30,7 +31,14 @@ export function LoginForm() {
     setLoading(false);
     if (res.success && res.data) {
       saveTokens(res.data);
-      router.push("/dashboard");
+      const user = await refreshUser();
+      if (user?.role === "ADMIN" || user?.role === "SUPER_ADMIN") {
+        router.push("/admin/dashboard");
+      } else if (user?.role === "OWNER") {
+        router.push("/dashboard/owner");
+      } else {
+        router.push("/dashboard");
+      }
     } else {
       setError(res.message || "Invalid credentials. Please try again.");
     }

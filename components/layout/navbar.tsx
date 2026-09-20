@@ -204,16 +204,7 @@ export function Navbar() {
                     <p className="text-[11px] text-muted-foreground truncate">{user.email}</p>
                   </div>
 
-                  <Link
-                    href="/dashboard"
-                    onClick={() => setIsUserMenuOpen(false)}
-                    className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-popover-foreground hover:bg-muted transition-colors"
-                  >
-                    <LayoutDashboard className="h-4 w-4 text-muted-foreground" />
-                    <span>Dashboard</span>
-                  </Link>
-
-                  {(user.role === "ADMIN" || user.role === "SUPER_ADMIN") && (
+                  {(user.role === "ADMIN" || user.role === "SUPER_ADMIN") ? (
                     <Link
                       href="/admin/dashboard"
                       onClick={() => setIsUserMenuOpen(false)}
@@ -222,9 +213,7 @@ export function Navbar() {
                       <ShieldAlert className="h-4 w-4 text-emerald-500" />
                       <span>Admin Panel</span>
                     </Link>
-                  )}
-
-                  {user.role === "OWNER" && (
+                  ) : user.role === "OWNER" ? (
                     <>
                       <Link
                         href="/dashboard/owner"
@@ -243,6 +232,15 @@ export function Navbar() {
                         <span>Post Property</span>
                       </Link>
                     </>
+                  ) : (
+                    <Link
+                      href="/dashboard"
+                      onClick={() => setIsUserMenuOpen(false)}
+                      className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-popover-foreground hover:bg-muted transition-colors"
+                    >
+                      <LayoutDashboard className="h-4 w-4 text-muted-foreground" />
+                      <span>Dashboard</span>
+                    </Link>
                   )}
 
                   <div className="my-1 h-px bg-border" />
@@ -338,25 +336,33 @@ export function Navbar() {
                   <p className="text-xs font-semibold">{user.full_name}</p>
                   <p className="text-[11px] text-muted-foreground">{user.email}</p>
                 </div>
-                <Button variant="outline" size="sm" asChild className="w-full justify-start rounded-lg">
-                  <Link href="/dashboard">
-                    <LayoutDashboard className="h-4 w-4 mr-2" />
-                    Dashboard
-                  </Link>
-                </Button>
-                {user.role === "OWNER" && (
-                  <Button variant="outline" size="sm" asChild className="w-full justify-start rounded-lg">
-                    <Link href="/dashboard/owner">
-                      <Home className="h-4 w-4 mr-2" />
-                      Owner Hub
-                    </Link>
-                  </Button>
-                )}
-                {(user.role === "ADMIN" || user.role === "SUPER_ADMIN") && (
+                {(user.role === "ADMIN" || user.role === "SUPER_ADMIN") ? (
                   <Button variant="outline" size="sm" asChild className="w-full justify-start rounded-lg">
                     <Link href="/admin/dashboard">
-                      <ShieldAlert className="h-4 w-4 mr-2" />
+                      <ShieldAlert className="h-4 w-4 mr-2 text-emerald-500" />
                       Admin Panel
+                    </Link>
+                  </Button>
+                ) : user.role === "OWNER" ? (
+                  <>
+                    <Button variant="outline" size="sm" asChild className="w-full justify-start rounded-lg">
+                      <Link href="/dashboard/owner">
+                        <Home className="h-4 w-4 mr-2" />
+                        Owner Hub
+                      </Link>
+                    </Button>
+                    <Button variant="outline" size="sm" asChild className="w-full justify-start rounded-lg">
+                      <Link href="/dashboard/properties/new">
+                        <Plus className="h-4 w-4 mr-2" />
+                        Post Property
+                      </Link>
+                    </Button>
+                  </>
+                ) : (
+                  <Button variant="outline" size="sm" asChild className="w-full justify-start rounded-lg">
+                    <Link href="/dashboard">
+                      <LayoutDashboard className="h-4 w-4 mr-2" />
+                      Dashboard
                     </Link>
                   </Button>
                 )}

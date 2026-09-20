@@ -56,10 +56,14 @@ export function DashboardClientView() {
     }
 
     if (isAuthenticated) {
+      if (user?.role === "ADMIN" || user?.role === "SUPER_ADMIN") {
+        router.replace("/admin/dashboard");
+        return;
+      }
       const t = setTimeout(loadDashboardData, 0);
       return () => clearTimeout(t);
     }
-  }, [isAuthenticated, loading, router, loadDashboardData]);
+  }, [isAuthenticated, loading, router, loadDashboardData, user?.role]);
 
   if (loading) {
     return (
