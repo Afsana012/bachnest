@@ -17,6 +17,7 @@ import {
   Clock,
   Navigation,
   ExternalLink,
+  AlertCircle,
 } from "lucide-react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
@@ -29,7 +30,10 @@ import { coverImage, enumLabel, formatMoney, toNumber } from "@/lib/format";
 
 export function PropertyDetailView({ property }: { property: Property }) {
   const router = useRouter();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
+  const [bookingError, setBookingError] = useState<string | null>(null);
+
+  const isOwnerOfProperty = Boolean(user && property.owner_id && user.id === property.owner_id);
 
   const hasCoords = Boolean(
     property.latitude &&
@@ -78,12 +82,17 @@ export function PropertyDetailView({ property }: { property: Property }) {
   };
 
   const handleBooking = async () => {
+    setBookingError(null);
     if (!isAuthenticated) {
       router.push("/auth/login");
       return;
     }
+    if (isOwnerOfProperty) {
+      setBookingError("You are the owner of this property. You cannot schedule visits for your own listing.");
+      return;
+    }
     if (!selectedRoom) {
-      alert("Select a room first.");
+      setBookingError("Please select a room first.");
       return;
     }
     const requestedDate = moveInDate || new Date(Date.now() + 86400000 * 7).toISOString().split("T")[0];
@@ -105,7 +114,7 @@ export function PropertyDetailView({ property }: { property: Property }) {
     if (res.success) {
       setBookingSuccess(true);
     } else {
-      alert(res.message || "Failed to submit booking request");
+      setBookingError(res.message || "Failed to submit booking request");
     }
   };
 
@@ -476,7 +485,22 @@ export function PropertyDetailView({ property }: { property: Property }) {
                 </div>
               )}
 
-              {bookingSuccess ? (
+              {isOwnerOfProperty ? (
+                <div className="rounded-2xl bg-muted/60 border border-border p-4 text-center space-y-2.5">
+                  <p className="text-xs font-semibold text-foreground">You are the owner of this property</p>
+                  <p className="text-[11px] text-muted-foreground">
+                    You manage bookings and room inventory for this listing from your Owner Dashboard.
+                  </p>
+                  <Button
+                    onClick={() => router.push("/dashboard/owner")}
+                    variant="outline"
+                    className="w-full rounded-xl text-xs font-medium"
+                    size="sm"
+                  >
+                    Open Owner Dashboard
+                  </Button>
+                </div>
+              ) : bookingSuccess ? (
                 <div className="rounded-2xl bg-emerald-500/10 border border-emerald-500/20 p-4 text-center">
                   <CheckCircle2 className="h-8 w-8 text-emerald-500 mx-auto mb-2" />
                   <h4 className="font-bold text-sm text-emerald-600 dark:text-emerald-400">
@@ -487,24 +511,36 @@ export function PropertyDetailView({ property }: { property: Property }) {
                       ? "The landlord has been notified of your requested inspection date. Track status in your dashboard."
                       : "The landlord has been notified. Check your dashboard for updates."}
                   </p>
-                  <Button onClick={() => router.push("/dashboard")} className="mt-3 w-full rounded-xl" size="sm">
+                  <Button
+                    onClick={() => router.push(user?.role === "OWNER" ? "/dashboard/owner" : "/dashboard")}
+                    className="mt-3 w-full rounded-xl"
+                    size="sm"
+                  >
                     View in Dashboard
                   </Button>
                 </div>
               ) : (
-                <Button
-                  onClick={handleBooking}
-                  disabled={isBooking || !selectedRoom}
-                  className="w-full h-12 rounded-2xl font-semibold shadow-md"
-                >
-                  {isBooking
-                    ? "Submitting..."
-                    : selectedRoom
-                      ? bookingMode === "visit"
-                        ? "Request Property Visit"
-                        : "Request to Book Room"
-                      : "Select a Room First"}
-                </Button>
+                <div className="space-y-3">
+                  {bookingError && (
+                    <div className="rounded-2xl bg-destructive/10 border border-destructive/25 p-3 text-xs text-destructive font-medium flex items-center gap-2">
+                      <AlertCircle className="h-4 w-4 shrink-0" />
+                      <span>{bookingError}</span>
+                    </div>
+                  )}
+                  <Button
+                    onClick={handleBooking}
+                    disabled={isBooking || !selectedRoom}
+                    className="w-full h-12 rounded-2xl font-semibold shadow-md"
+                  >
+                    {isBooking
+                      ? "Submitting..."
+                      : selectedRoom
+                        ? bookingMode === "visit"
+                          ? "Request Property Visit"
+                          : "Request to Book Room"
+                        : "Select a Room First"}
+                  </Button>
+                </div>
               )}
             </CardContent>
           </Card>
