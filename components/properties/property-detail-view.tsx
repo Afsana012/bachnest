@@ -2,7 +2,22 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { MapPin, ShieldCheck, Wifi, Zap, Camera, Building, Eye, ArrowLeft, CheckCircle2, Layers, CalendarDays, Clock } from "lucide-react";
+import {
+  MapPin,
+  ShieldCheck,
+  Wifi,
+  Zap,
+  Camera,
+  Building,
+  Eye,
+  ArrowLeft,
+  CheckCircle2,
+  Layers,
+  CalendarDays,
+  Clock,
+  Navigation,
+  ExternalLink,
+} from "lucide-react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -15,6 +30,34 @@ import { coverImage, enumLabel, formatMoney, toNumber } from "@/lib/format";
 export function PropertyDetailView({ property }: { property: Property }) {
   const router = useRouter();
   const { isAuthenticated } = useAuth();
+
+  const hasCoords = Boolean(
+    property.latitude &&
+    property.longitude &&
+    (Number(property.latitude) !== 0 || Number(property.longitude) !== 0)
+  );
+
+  const fullLocationQuery = [
+    property.title,
+    property.address_line,
+    property.area_neighborhood,
+    property.city || "Dhaka",
+    "Bangladesh",
+  ]
+    .filter(Boolean)
+    .join(", ");
+
+  const mapQueryParam = hasCoords
+    ? `${property.latitude},${property.longitude}`
+    : encodeURIComponent(fullLocationQuery);
+
+  const embedMapUrl = `https://maps.google.com/maps?q=${mapQueryParam}&t=&z=15&ie=UTF8&iwloc=&output=embed`;
+  const directionsUrl = hasCoords
+    ? `https://www.google.com/maps/dir/?api=1&destination=${property.latitude},${property.longitude}`
+    : `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(fullLocationQuery)}`;
+  const googleMapsViewUrl = hasCoords
+    ? `https://www.google.com/maps/search/?api=1&query=${property.latitude},${property.longitude}`
+    : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(fullLocationQuery)}`;
 
   const firstAvailable = property.rooms?.find((r) => r.is_available) || property.rooms?.[0];
   const [selectedRoom, setSelectedRoom] = useState<Room | null>(firstAvailable || null);
@@ -110,11 +153,19 @@ export function PropertyDetailView({ property }: { property: Property }) {
 
           <div>
             <h1 className="text-3xl font-extrabold tracking-tight">{property.title}</h1>
-            <div className="mt-2 flex items-center gap-2 text-sm text-muted-foreground">
-              <MapPin className="h-4 w-4 text-primary" />
-              <span>
+            <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+              <span className="flex items-center gap-1.5">
+                <MapPin className="h-4 w-4 text-primary" />
                 {property.address_line}, {property.area_neighborhood}, {property.city}
               </span>
+              <a
+                href={directionsUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-xs text-primary font-medium hover:underline ml-1"
+              >
+                <Navigation className="h-3 w-3" /> Get Directions
+              </a>
             </div>
             {property.flat_number && (
               <p className="mt-1 text-xs text-muted-foreground">
@@ -252,6 +303,57 @@ export function PropertyDetailView({ property }: { property: Property }) {
                 The owner has not added room inventory yet.
               </div>
             )}
+          </div>
+
+          {/* ── Google Maps & Directions ── */}
+          <div className="rounded-3xl border border-border bg-card overflow-hidden shadow-xs">
+            <div className="p-5 pb-4 border-b border-border/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-muted/20">
+              <div>
+                <h3 className="text-lg font-bold flex items-center gap-2">
+                  <MapPin className="h-5 w-5 text-primary" /> Location & Directions
+                </h3>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {property.address_line ? `${property.address_line}, ` : ""}{property.area_neighborhood}, {property.city}
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button asChild size="sm" className="rounded-xl text-xs gap-1.5 font-medium shadow-xs">
+                  <a href={directionsUrl} target="_blank" rel="noopener noreferrer">
+                    <Navigation className="h-3.5 w-3.5" /> Get Directions
+                  </a>
+                </Button>
+                <Button asChild size="sm" variant="outline" className="rounded-xl text-xs gap-1.5 font-medium">
+                  <a href={googleMapsViewUrl} target="_blank" rel="noopener noreferrer">
+                    <ExternalLink className="h-3.5 w-3.5" /> Open in Maps
+                  </a>
+                </Button>
+              </div>
+            </div>
+
+            <div className="relative w-full h-[320px] sm:h-[380px] bg-muted">
+              <iframe
+                title="Property Location on Google Maps"
+                width="100%"
+                height="100%"
+                className="border-0 w-full h-full"
+                loading="lazy"
+                allowFullScreen
+                referrerPolicy="no-referrer-when-downgrade"
+                src={embedMapUrl}
+              />
+            </div>
+
+            <div className="p-3.5 bg-muted/40 border-t border-border/40 text-xs text-muted-foreground flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <span className="flex items-center gap-1.5">
+                <MapPin className="h-3.5 w-3.5 text-primary shrink-0" />
+                {hasCoords
+                  ? `GPS Coordinates: ${property.latitude.toFixed(5)}, ${property.longitude.toFixed(5)}`
+                  : `${property.area_neighborhood}, ${property.city}`}
+              </span>
+              <span className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-medium">
+                <CheckCircle2 className="h-3.5 w-3.5 shrink-0" /> Live Interactive Google Map
+              </span>
+            </div>
           </div>
         </div>
 

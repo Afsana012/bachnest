@@ -13,6 +13,7 @@ import {
   Calendar,
   ExternalLink,
   Info,
+  Navigation,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Booking } from "@/lib/types";
@@ -147,7 +148,7 @@ export function LandlordContactModal({
 
           {/* Full Property Address & Logistics */}
           <div className="p-4 rounded-2xl bg-muted/40 border border-border/80 space-y-3">
-            <div className="flex items-start justify-between gap-3">
+            <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
               <div className="space-y-1">
                 <span className="text-[11px] font-semibold text-primary uppercase tracking-wide">
                   Complete Property Address
@@ -163,15 +164,40 @@ export function LandlordContactModal({
                   </p>
                 )}
               </div>
-              <Button asChild size="sm" variant="outline" className="rounded-xl text-xs gap-1.5 shrink-0">
-                <a
-                  href={`https://www.google.com/maps/search/?api=1&query=${mapQuery}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <ExternalLink className="h-3.5 w-3.5" /> Map Directions
-                </a>
-              </Button>
+              <div className="flex items-center gap-2 shrink-0">
+                <Button asChild size="sm" className="rounded-xl text-xs gap-1.5 font-medium shadow-xs">
+                  <a
+                    href={`https://www.google.com/maps/dir/?api=1&destination=${mapQuery}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <Navigation className="h-3.5 w-3.5" /> Get Directions
+                  </a>
+                </Button>
+                <Button asChild size="sm" variant="outline" className="rounded-xl text-xs gap-1.5">
+                  <a
+                    href={`https://www.google.com/maps/search/?api=1&query=${mapQuery}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <ExternalLink className="h-3.5 w-3.5" /> Open in Maps
+                  </a>
+                </Button>
+              </div>
+            </div>
+
+            {/* Google Maps Preview */}
+            <div className="relative w-full h-[180px] rounded-xl overflow-hidden border border-border/60 bg-muted">
+              <iframe
+                title="House Location Map"
+                width="100%"
+                height="100%"
+                className="border-0 w-full h-full"
+                loading="lazy"
+                allowFullScreen
+                referrerPolicy="no-referrer-when-downgrade"
+                src={`https://maps.google.com/maps?q=${mapQuery}&t=&z=15&ie=UTF8&iwloc=&output=embed`}
+              />
             </div>
 
             {/* Rules & Policies */}

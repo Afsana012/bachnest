@@ -13,6 +13,7 @@ import {
   MapPin,
   Phone,
   MessageCircle,
+  Navigation,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/shared/status-badge";
@@ -246,6 +247,31 @@ export function BookingPanel({ bookings, onChanged }: { bookings: Booking[]; onC
                       >
                         <MessageCircle className="h-3 w-3 mr-1" /> Address & Chat
                       </Button>
+                      {(b.property_address || b.area_neighborhood) && (
+                        <Button
+                          asChild
+                          size="sm"
+                          variant="outline"
+                          className="h-7 px-2.5 rounded-lg text-xs"
+                        >
+                          <a
+                            href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(
+                              [
+                                b.flat_number ? `Flat ${b.flat_number}` : null,
+                                b.property_address || b.area_neighborhood,
+                                b.area_neighborhood,
+                                b.city || "Dhaka",
+                              ]
+                                .filter(Boolean)
+                                .join(", ")
+                            )}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            <Navigation className="h-3 w-3 mr-1 text-primary" /> Directions
+                          </a>
+                        </Button>
+                      )}
                     </div>
                   </div>
                 </div>

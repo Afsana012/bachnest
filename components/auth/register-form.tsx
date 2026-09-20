@@ -56,7 +56,11 @@ export function RegisterForm() {
     setLoading(false);
     if (loginRes.success && loginRes.data) {
       saveTokens(loginRes.data);
-      router.push("/dashboard");
+      if (role === "property_owner") {
+        router.push("/dashboard/owner");
+      } else {
+        router.push("/dashboard");
+      }
     } else {
       router.push("/auth/login");
     }

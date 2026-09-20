@@ -432,6 +432,19 @@ export function CreatePropertyForm() {
                 />
               </div>
             </div>
+
+            {latitude && longitude && !isNaN(parseFloat(latitude)) && !isNaN(parseFloat(longitude)) && (
+              <div className="mt-3 rounded-xl overflow-hidden border border-border/70">
+                <iframe
+                  title="Location Preview"
+                  width="100%"
+                  height="160"
+                  className="border-0 w-full"
+                  loading="lazy"
+                  src={`https://maps.google.com/maps?q=${latitude},${longitude}&t=&z=16&ie=UTF8&iwloc=&output=embed`}
+                />
+              </div>
+            )}
           </div>
 
           {/* ── Amenities ── */}

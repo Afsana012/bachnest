@@ -64,6 +64,10 @@ export function DashboardClientView() {
         router.replace("/admin/dashboard");
         return;
       }
+      if (user?.role === "OWNER") {
+        router.replace("/dashboard/owner");
+        return;
+      }
       const t = setTimeout(loadDashboardData, 0);
       return () => clearTimeout(t);
     }
