@@ -1,6 +1,17 @@
 import { ApiResponse, PaginatedApiResponse, TokenPair } from "./types";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+function getApiBase(): string {
+  if (process.env.NEXT_PUBLIC_API_URL) return process.env.NEXT_PUBLIC_API_URL;
+  if (
+    typeof window !== "undefined" &&
+    window.location.hostname &&
+    window.location.hostname !== "localhost" &&
+    window.location.hostname !== "127.0.0.1"
+  ) {
+    return `http://${window.location.hostname}:8000/api/v1`;
+  }
+  return "http://localhost:8000/api/v1";
+}
 
 const ACCESS_TOKEN_KEY = "bachnest_access_token";
 const REFRESH_TOKEN_KEY = "bachnest_refresh_token";
@@ -20,7 +31,8 @@ export function clearTokens() {
 }
 
 function buildUrl(endpoint: string) {
-  return `${API_BASE}${endpoint.startsWith("/") ? endpoint : `/${endpoint}`}`;
+  const base = getApiBase();
+  return `${base}${endpoint.startsWith("/") ? endpoint : `/${endpoint}`}`;
 }
 
 const REQUEST_TIMEOUT_MS = 20000;

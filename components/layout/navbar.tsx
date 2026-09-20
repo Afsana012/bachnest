@@ -327,6 +327,13 @@ export function Navbar() {
             >
               SOS Emergency Hub
             </Link>
+            <div className="flex items-center justify-between px-2 py-2 rounded-xl bg-muted/40 border border-border">
+              <span className="text-xs font-semibold text-foreground">Appearance</span>
+              <div className="flex items-center gap-1.5">
+                <span className="text-[11px] text-muted-foreground">Dark / Light</span>
+                <ThemeToggle />
+              </div>
+            </div>
           </div>
 
           <div className="pt-2 border-t border-border">
