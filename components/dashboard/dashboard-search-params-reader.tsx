@@ -10,6 +10,8 @@ export function DashboardSearchParamsReader() {
 
   const payment = searchParams.get("payment");
   const paymentResult = payment === "success" || payment === "failed" ? payment : null;
+  const tab = searchParams.get("tab");
+  const initialTab = tab === "notices" ? "notices" : undefined;
 
   useEffect(() => {
     if (paymentResult) {
@@ -17,5 +19,5 @@ export function DashboardSearchParamsReader() {
     }
   }, [paymentResult, router]);
 
-  return <DashboardClientView initialPaymentResult={paymentResult} />;
+  return <DashboardClientView initialPaymentResult={paymentResult} initialTab={initialTab} />;
 }

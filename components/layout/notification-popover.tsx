@@ -10,6 +10,7 @@ import {
   CheckCircle2,
   AlertCircle,
   ChevronRight,
+  Megaphone,
 } from "lucide-react";
 import { fetchApi } from "@/lib/api";
 import { NotificationItem, NotificationSummary } from "@/lib/types";
@@ -32,6 +33,8 @@ function formatRelativeTime(dateString: string): string {
 
 function getNotificationIcon(type?: string) {
   switch (type) {
+    case "BUILDING_NOTICE":
+      return <Megaphone className="h-4 w-4 text-amber-500 shrink-0" />;
     case "BOOKING_MESSAGE":
       return <MessageCircle className="h-4 w-4 text-emerald-500 shrink-0" />;
     case "VISIT_CONFIRMED":
@@ -93,6 +96,11 @@ export function NotificationPopover() {
     }
 
     setIsOpen(false);
+
+    if (item.data?.type === "BUILDING_NOTICE") {
+      router.push("/dashboard?tab=notices");
+      return;
+    }
 
     if (item.data?.booking_id) {
       if (user?.role === "OWNER") {

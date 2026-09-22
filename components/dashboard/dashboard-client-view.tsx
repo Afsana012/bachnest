@@ -3,12 +3,12 @@
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { UserCircle, ShieldAlert, CheckCircle2, Building2 } from "lucide-react";
+import { UserCircle, ShieldAlert, CheckCircle2, Building2, Megaphone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/use-auth";
 import { fetchApi } from "@/lib/api";
-import { Booking, Complaint, Invoice, KYCOut, ParkingBooking, Tenancy, RoommateMessage } from "@/lib/types";
+import { Booking, Complaint, Invoice, KYCOut, Notice, ParkingBooking, Tenancy, RoommateMessage } from "@/lib/types";
 import { TenancyPanel } from "@/components/dashboard/tenancy-panel";
 import { InvoicePanel } from "@/components/dashboard/invoice-panel";
 import { ComplaintPanel } from "@/components/dashboard/complaint-panel";
@@ -20,7 +20,13 @@ import { TrustBadge } from "@/components/shared/trust-badge";
 
 type DashboardTab = "tenancies" | "invoices" | "complaints" | "bookings" | "notices" | "parking" | "roommates";
 
-export function DashboardClientView({ initialPaymentResult }: { initialPaymentResult?: "success" | "failed" | null }) {
+export function DashboardClientView({
+  initialPaymentResult,
+  initialTab,
+}: {
+  initialPaymentResult?: "success" | "failed" | null;
+  initialTab?: DashboardTab;
+}) {
   const router = useRouter();
   const { user, isAuthenticated, loading } = useAuth();
   const [tenancies, setTenancies] = useState<Tenancy[]>([]);
@@ -29,12 +35,15 @@ export function DashboardClientView({ initialPaymentResult }: { initialPaymentRe
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [parkingPasses, setParkingPasses] = useState<ParkingBooking[]>([]);
   const [roommateMessages, setRoommateMessages] = useState<RoommateMessage[]>([]);
+  const [notices, setNotices] = useState<Notice[]>([]);
   const [kyc, setKyc] = useState<KYCOut | null>(null);
   const [paymentResult, setPaymentResult] = useState<"success" | "failed" | null>(initialPaymentResult ?? null);
-  const [activeTab, setActiveTab] = useState<DashboardTab>(initialPaymentResult ? "invoices" : "tenancies");
+  const [activeTab, setActiveTab] = useState<DashboardTab>(
+    initialTab || (initialPaymentResult ? "invoices" : "tenancies")
+  );
 
   const loadDashboardData = useCallback(async () => {
-    const [tenRes, invRes, kycRes, compRes, bookRes, parkRes, rmRes] = await Promise.all([
+    const [tenRes, invRes, kycRes, compRes, bookRes, parkRes, rmRes, notRes] = await Promise.all([
       fetchApi<Tenancy[]>("/tenancies/me"),
       fetchApi<Invoice[]>("/billing/invoices"),
       fetchApi<KYCOut>("/kyc/me"),
@@ -42,6 +51,7 @@ export function DashboardClientView({ initialPaymentResult }: { initialPaymentRe
       fetchApi<Booking[]>("/bookings/me"),
       fetchApi<ParkingBooking[]>("/parking/me"),
       fetchApi<RoommateMessage[]>("/roommates/messages/me"),
+      fetchApi<Notice[]>("/tenancies/me/notices"),
     ]);
 
     if (tenRes.success && tenRes.data) setTenancies(tenRes.data);
@@ -51,6 +61,7 @@ export function DashboardClientView({ initialPaymentResult }: { initialPaymentRe
     if (bookRes.success && bookRes.data) setBookings(bookRes.data);
     if (parkRes.success && parkRes.data) setParkingPasses(parkRes.data);
     if (rmRes.success && rmRes.data) setRoommateMessages(rmRes.data);
+    if (notRes.success && notRes.data) setNotices(notRes.data);
   }, []);
 
   useEffect(() => {
@@ -86,6 +97,7 @@ export function DashboardClientView({ initialPaymentResult }: { initialPaymentRe
     { key: "invoices", label: "Invoices", count: invoices.length },
     { key: "complaints", label: "Maintenance", count: complaints.length },
     { key: "bookings", label: "Bookings", count: bookings.length },
+    { key: "notices", label: "Building Notices", count: notices.length },
     { key: "roommates", label: "Roommate Inquiries", count: roommateMessages.length },
     { key: "parking", label: "Parking", count: parkingPasses.length },
   ];
@@ -232,6 +244,38 @@ export function DashboardClientView({ initialPaymentResult }: { initialPaymentRe
         </div>
 
         <div className="lg:col-span-8">
+          {/* Active Building Notice Banner */}
+          {notices.length > 0 && activeTab !== "notices" && (
+            <div className="mb-6 p-4 rounded-2xl border border-amber-500/30 bg-amber-500/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs animate-in fade-in">
+              <div className="flex items-start gap-3">
+                <div className="p-2 rounded-xl bg-amber-500/20 text-amber-700 dark:text-amber-400 shrink-0 mt-0.5">
+                  <Megaphone className="h-4 w-4" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-xs font-bold uppercase tracking-wider text-amber-900 dark:text-amber-200">
+                      Building Notice: {notices[0].title}
+                    </span>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-800 dark:text-amber-300">
+                      {notices[0].priority}
+                    </span>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1 leading-relaxed line-clamp-2">
+                    {notices[0].content}
+                  </p>
+                </div>
+              </div>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setActiveTab("notices")}
+                className="rounded-xl text-xs font-semibold shrink-0 border-amber-500/40 text-amber-800 dark:text-amber-300 hover:bg-amber-500/20"
+              >
+                View Notice ({notices.length})
+              </Button>
+            </div>
+          )}
+
           <div className="flex items-center gap-6 border-b border-border mb-8 overflow-x-auto">
             {tabs.map((tab) => (
               <button
@@ -246,16 +290,6 @@ export function DashboardClientView({ initialPaymentResult }: { initialPaymentRe
                 {tab.label} ({tab.count})
               </button>
             ))}
-            <button
-              onClick={() => setActiveTab("notices")}
-              className={`pb-3 text-sm font-medium transition-all whitespace-nowrap ${
-                activeTab === "notices"
-                  ? "text-foreground border-b-2 border-foreground"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              Notices
-            </button>
           </div>
 
           <div className="space-y-6">
