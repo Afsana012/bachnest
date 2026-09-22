@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { UserCircle, ShieldAlert, CheckCircle2, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -22,6 +22,7 @@ type DashboardTab = "tenancies" | "invoices" | "complaints" | "bookings" | "noti
 
 export function DashboardClientView() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user, isAuthenticated, loading } = useAuth();
   const [tenancies, setTenancies] = useState<Tenancy[]>([]);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
@@ -30,6 +31,7 @@ export function DashboardClientView() {
   const [parkingPasses, setParkingPasses] = useState<ParkingBooking[]>([]);
   const [roommateMessages, setRoommateMessages] = useState<RoommateMessage[]>([]);
   const [kyc, setKyc] = useState<KYCOut | null>(null);
+  const [paymentResult, setPaymentResult] = useState<"success" | "failed" | null>(null);
 
   const [activeTab, setActiveTab] = useState<DashboardTab>("tenancies");
 
@@ -52,6 +54,15 @@ export function DashboardClientView() {
     if (parkRes.success && parkRes.data) setParkingPasses(parkRes.data);
     if (rmRes.success && rmRes.data) setRoommateMessages(rmRes.data);
   }, []);
+
+  useEffect(() => {
+    const result = searchParams.get("payment");
+    if (result === "success" || result === "failed") {
+      setPaymentResult(result);
+      setActiveTab("invoices");
+      router.replace("/dashboard", { scroll: false });
+    }
+  }, [searchParams, router]);
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
@@ -92,6 +103,18 @@ export function DashboardClientView() {
 
   return (
     <div className="container mx-auto max-w-6xl px-4 sm:px-6">
+      {paymentResult === "success" && (
+        <div className="mb-6 p-4 rounded-xl border border-emerald-500/30 bg-emerald-500/10 text-sm text-emerald-700 dark:text-emerald-400 flex items-center justify-between">
+          <span>✅ bKash payment successful! Your invoice has been updated.</span>
+          <button onClick={() => setPaymentResult(null)} className="text-xs underline ml-4">Dismiss</button>
+        </div>
+      )}
+      {paymentResult === "failed" && (
+        <div className="mb-6 p-4 rounded-xl border border-destructive/30 bg-destructive/10 text-sm text-destructive flex items-center justify-between">
+          <span>❌ bKash payment was not completed. Please try again from your invoices.</span>
+          <button onClick={() => setPaymentResult(null)} className="text-xs underline ml-4">Dismiss</button>
+        </div>
+      )}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-border pb-8 mb-8">
         <div>
           <h1 className="text-3xl font-semibold tracking-tight text-foreground">

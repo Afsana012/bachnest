@@ -4,7 +4,7 @@ import { useState } from "react";
 import { FileText, CreditCard, Receipt, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/shared/status-badge";
-import { CheckoutResponse, Invoice, Payment } from "@/lib/types";
+import { BkashInitiateResponse, Invoice, Payment } from "@/lib/types";
 import { fetchApi } from "@/lib/api";
 import { formatDate, formatMoney, toNumber } from "@/lib/format";
 import { InvoiceReceiptModal } from "@/components/shared/invoice-receipt-modal";
@@ -16,28 +16,25 @@ export function InvoicePanel({ invoices, onChanged }: { invoices: Invoice[]; onC
   const [payingId, setPayingId] = useState<string | null>(null);
   const [receipt, setReceipt] = useState<Payment | null>(null);
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  const payInvoice = async (invoice: Invoice) => {
+  const payWithBkash = async (invoice: Invoice) => {
     setPayingId(invoice.id);
-    const res = await fetchApi<CheckoutResponse>("/payments/checkout", {
-      method: "POST",
-      body: JSON.stringify({ invoice_id: invoice.id, payment_method: "MOCK" }),
-    });
+    setError(null);
+
+    const res = await fetchApi<BkashInitiateResponse>(
+      `/billing/invoices/${invoice.id}/bkash/initiate`,
+      { method: "POST" },
+    );
+
     setPayingId(null);
+
     if (!res.success || !res.data) {
-      alert(res.message || "Payment failed");
+      setError(res.message || "bKash payment initiation failed. Please try again.");
       return;
     }
 
-    if (res.data.payment_url) {
-      window.open(res.data.payment_url, "_blank");
-    }
-
-    const paymentRes = await fetchApi<Payment>(`/payments/${res.data.payment_id}`);
-    if (paymentRes.success && paymentRes.data) {
-      setReceipt(paymentRes.data);
-    }
-    onChanged();
+    window.location.href = res.data.bkash_url;
   };
 
   const dueAmount = (invoice: Invoice) => toNumber(invoice.total_amount) - toNumber(invoice.paid_amount);
@@ -47,6 +44,12 @@ export function InvoicePanel({ invoices, onChanged }: { invoices: Invoice[]; onC
       <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
         <FileText className="h-5 w-5 text-muted-foreground" /> Billing History
       </h2>
+
+      {error && (
+        <div className="mb-4 p-4 rounded-xl border border-destructive/30 bg-destructive/10 text-sm text-destructive">
+          {error}
+        </div>
+      )}
 
       {receipt && (
         <div className="mb-4 p-4 rounded-xl border border-emerald-500/20 bg-emerald-500/10 text-sm">
@@ -94,9 +97,14 @@ export function InvoicePanel({ invoices, onChanged }: { invoices: Invoice[]; onC
                 </Button>
                 <StatusBadge status={inv.status} />
                 {PAYABLE.has(inv.status) && (
-                  <Button size="sm" disabled={payingId === inv.id} onClick={() => payInvoice(inv)} className="rounded-xl font-semibold shadow-xs">
+                  <Button
+                    size="sm"
+                    disabled={payingId === inv.id}
+                    onClick={() => payWithBkash(inv)}
+                    className="rounded-xl font-semibold shadow-xs bg-[#E2136E] hover:bg-[#c41060] text-white"
+                  >
                     <CreditCard className="h-4 w-4 mr-1.5" />
-                    {payingId === inv.id ? "Processing..." : "Pay Now"}
+                    {payingId === inv.id ? "Redirecting..." : "Pay with bKash"}
                   </Button>
                 )}
               </div>
@@ -115,9 +123,7 @@ export function InvoicePanel({ invoices, onChanged }: { invoices: Invoice[]; onC
           invoice={selectedInvoice}
           isOpen={Boolean(selectedInvoice)}
           onClose={() => setSelectedInvoice(null)}
-          onPay={() => {
-            payInvoice(selectedInvoice);
-          }}
+          onPay={() => payWithBkash(selectedInvoice)}
         />
       )}
     </div>

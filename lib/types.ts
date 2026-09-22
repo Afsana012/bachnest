@@ -340,6 +340,13 @@ export interface CheckoutResponse {
   payment_url?: string;
 }
 
+export interface BkashInitiateResponse {
+  payment_id: string;
+  transaction_reference: string;
+  amount: Money;
+  bkash_url: string;
+}
+
 export interface Payment {
   id: string;
   invoice_id: string;
