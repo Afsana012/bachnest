@@ -123,6 +123,11 @@ export function BookingRequests({ bookings, onChanged }: { bookings: Booking[]; 
                       <Eye className="h-3 w-3" /> Visit Requested
                     </span>
                   )}
+                  {booking.visit_notes && booking.visit_notes.toLowerCase().includes("[tenant") && (
+                    <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-primary/10 text-primary border border-primary/20 flex items-center gap-1">
+                      <MessageCircle className="h-3 w-3" /> Tenant Note
+                    </span>
+                  )}
                 </div>
                 <p className="text-xs font-semibold text-primary mt-0.5">
                   {booking.property_title || "Residential Property"}

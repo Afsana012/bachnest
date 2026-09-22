@@ -175,6 +175,8 @@ export function Navbar() {
 
           <ThemeToggle />
 
+          {isAuthenticated && user && <NotificationPopover />}
+
           {isAuthenticated && user ? (
             <div className="relative" ref={userMenuRef}>
               <button

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   CalendarCheck,
@@ -32,6 +32,18 @@ export function BookingPanel({ bookings, onChanged }: { bookings: Booking[]; onC
   const [busy, setBusy] = useState(false);
   const [payingAdvanceBooking, setPayingAdvanceBooking] = useState<Booking | null>(null);
   const [selectedContactBooking, setSelectedContactBooking] = useState<Booking | null>(null);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || bookings.length === 0) return;
+    const params = new URLSearchParams(window.location.search);
+    const targetBookingId = params.get("bookingId");
+    if (targetBookingId) {
+      const match = bookings.find((b) => b.id === targetBookingId);
+      if (match) {
+        setSelectedContactBooking(match);
+      }
+    }
+  }, [bookings]);
 
   const openCancelPrompt = (bookingId: string) => {
     setCancelPromptId(bookingId);
@@ -90,6 +102,11 @@ export function BookingPanel({ bookings, onChanged }: { bookings: Booking[]; onC
                     {b.room_number_or_name && (
                       <span className="text-xs px-2 py-0.5 rounded-md bg-primary/10 text-primary font-medium">
                         Room: {b.room_number_or_name}
+                      </span>
+                    )}
+                    {b.visit_notes && b.visit_notes.toLowerCase().includes("[landlord") && (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30">
+                        <MessageCircle className="h-3 w-3" /> Landlord Replied
                       </span>
                     )}
                   </div>
@@ -241,11 +258,18 @@ export function BookingPanel({ bookings, onChanged }: { bookings: Booking[]; onC
                       )}
                       <Button
                         size="sm"
-                        variant="outline"
+                        variant={b.visit_notes && b.visit_notes.toLowerCase().includes("[landlord") ? "default" : "outline"}
                         onClick={() => setSelectedContactBooking(b)}
-                        className="h-7 px-2.5 rounded-lg text-xs"
+                        className={`h-7 px-2.5 rounded-lg text-xs font-semibold ${
+                          b.visit_notes && b.visit_notes.toLowerCase().includes("[landlord")
+                            ? "bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs"
+                            : ""
+                        }`}
                       >
-                        <MessageCircle className="h-3 w-3 mr-1" /> Address & Chat
+                        <MessageCircle className="h-3 w-3 mr-1" />
+                        {b.visit_notes && b.visit_notes.toLowerCase().includes("[landlord")
+                          ? "View Note & Chat"
+                          : "Address & Chat"}
                       </Button>
                       {(b.property_address || b.area_neighborhood) && (
                         <Button
