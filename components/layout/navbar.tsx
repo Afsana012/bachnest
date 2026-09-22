@@ -18,6 +18,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
+import { NotificationPopover } from "@/components/layout/notification-popover";
 
 const NAV_ITEMS = [
   { label: "All Properties", href: "/properties" },

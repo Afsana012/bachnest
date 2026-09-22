@@ -730,3 +730,24 @@ export interface DMPFormData {
   co_occupants_info?: string;
 }
 
+export interface NotificationItem {
+  id: string;
+  recipient_id: string;
+  title: string;
+  body: string;
+  channel: "IN_APP" | "EMAIL" | "SMS" | "PUSH";
+  is_read: boolean;
+  data?: {
+    type?: string;
+    booking_id?: string;
+    property_title?: string;
+    [key: string]: unknown;
+  };
+  created_at: string;
+}
+
+export interface NotificationSummary {
+  unread_count: number;
+  items: NotificationItem[];
+}
+
