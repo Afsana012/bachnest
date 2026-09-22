@@ -12,6 +12,7 @@ import {
   UserCheck,
   AlertCircle,
   PenTool,
+  RotateCcw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -153,6 +154,16 @@ export function DigitalAgreementModal({
               <AlertCircle className="h-10 w-10 text-destructive" />
               <h4 className="font-bold text-base">Contract Unavailable</h4>
               <p className="text-sm text-muted-foreground max-w-sm">{error}</p>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={loadAgreement}
+                className="mt-2 rounded-xl"
+              >
+                <RotateCcw className="h-3.5 w-3.5 mr-1.5" />
+                Try Again
+              </Button>
             </div>
           ) : (
             <div className="space-y-6 text-sm leading-relaxed">
