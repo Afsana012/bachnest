@@ -1,10 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { FileText, CreditCard, Receipt, Download } from "lucide-react";
+import { FileText, CreditCard, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/shared/status-badge";
-import { BkashInitiateResponse, Invoice, Payment } from "@/lib/types";
+import { BkashInitiateResponse, Invoice } from "@/lib/types";
 import { fetchApi } from "@/lib/api";
 import { formatDate, formatMoney, toNumber } from "@/lib/format";
 import { InvoiceReceiptModal } from "@/components/shared/invoice-receipt-modal";
@@ -12,9 +12,8 @@ import { downloadInvoicePdf } from "@/lib/invoice-pdf";
 
 const PAYABLE = new Set(["ISSUED", "PARTIALLY_PAID", "OVERDUE"]);
 
-export function InvoicePanel({ invoices, onChanged }: { invoices: Invoice[]; onChanged: () => void }) {
+export function InvoicePanel({ invoices }: { invoices: Invoice[] }) {
   const [payingId, setPayingId] = useState<string | null>(null);
-  const [receipt, setReceipt] = useState<Payment | null>(null);
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -48,17 +47,6 @@ export function InvoicePanel({ invoices, onChanged }: { invoices: Invoice[]; onC
       {error && (
         <div className="mb-4 p-4 rounded-xl border border-destructive/30 bg-destructive/10 text-sm text-destructive">
           {error}
-        </div>
-      )}
-
-      {receipt && (
-        <div className="mb-4 p-4 rounded-xl border border-emerald-500/20 bg-emerald-500/10 text-sm">
-          <p className="font-semibold text-emerald-700 dark:text-emerald-400 flex items-center gap-2">
-            <Receipt className="h-4 w-4" /> Payment receipt
-          </p>
-          <p className="text-muted-foreground mt-1">
-            Ref {receipt.transaction_reference} • {formatMoney(receipt.amount)} • {receipt.status}
-          </p>
         </div>
       )}
 

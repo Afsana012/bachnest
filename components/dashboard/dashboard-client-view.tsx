@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { UserCircle, ShieldAlert, CheckCircle2, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -20,9 +20,8 @@ import { TrustBadge } from "@/components/shared/trust-badge";
 
 type DashboardTab = "tenancies" | "invoices" | "complaints" | "bookings" | "notices" | "parking" | "roommates";
 
-export function DashboardClientView() {
+export function DashboardClientView({ initialPaymentResult }: { initialPaymentResult?: "success" | "failed" | null }) {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const { user, isAuthenticated, loading } = useAuth();
   const [tenancies, setTenancies] = useState<Tenancy[]>([]);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
@@ -31,9 +30,8 @@ export function DashboardClientView() {
   const [parkingPasses, setParkingPasses] = useState<ParkingBooking[]>([]);
   const [roommateMessages, setRoommateMessages] = useState<RoommateMessage[]>([]);
   const [kyc, setKyc] = useState<KYCOut | null>(null);
-  const [paymentResult, setPaymentResult] = useState<"success" | "failed" | null>(null);
-
-  const [activeTab, setActiveTab] = useState<DashboardTab>("tenancies");
+  const [paymentResult, setPaymentResult] = useState<"success" | "failed" | null>(initialPaymentResult ?? null);
+  const [activeTab, setActiveTab] = useState<DashboardTab>(initialPaymentResult ? "invoices" : "tenancies");
 
   const loadDashboardData = useCallback(async () => {
     const [tenRes, invRes, kycRes, compRes, bookRes, parkRes, rmRes] = await Promise.all([
@@ -54,15 +52,6 @@ export function DashboardClientView() {
     if (parkRes.success && parkRes.data) setParkingPasses(parkRes.data);
     if (rmRes.success && rmRes.data) setRoommateMessages(rmRes.data);
   }, []);
-
-  useEffect(() => {
-    const result = searchParams.get("payment");
-    if (result === "success" || result === "failed") {
-      setPaymentResult(result);
-      setActiveTab("invoices");
-      router.replace("/dashboard", { scroll: false });
-    }
-  }, [searchParams, router]);
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
@@ -271,7 +260,7 @@ export function DashboardClientView() {
 
           <div className="space-y-6">
             {activeTab === "tenancies" && <TenancyPanel tenancies={tenancies} onChanged={loadDashboardData} />}
-            {activeTab === "invoices" && <InvoicePanel invoices={invoices} onChanged={loadDashboardData} />}
+            {activeTab === "invoices" && <InvoicePanel invoices={invoices} />}
             {activeTab === "complaints" && (
               <ComplaintPanel complaints={complaints} tenancies={tenancies} onChanged={loadDashboardData} />
             )}
