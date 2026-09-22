@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
-import { X, Wrench, Clock, AlertTriangle, Plus, Trash2, Image as ImageIcon, Loader2 } from "lucide-react";
+import { useState, useRef } from "react";
+import Image from "next/image";
+import { X, Wrench, Clock, AlertTriangle, Plus, Trash2, Loader2, UploadCloud, Link as LinkIcon } from "lucide-react";
 import { Complaint, ComplaintCategory, ComplaintPriority, Tenancy } from "@/lib/types";
-import { fetchApi } from "@/lib/api";
+import { fetchApi, uploadFile } from "@/lib/api";
 
 interface ComplaintSubmissionModalProps {
   tenancies: Tenancy[];
@@ -58,11 +59,47 @@ export function ComplaintSubmissionModal({
   const [evidenceUrls, setEvidenceUrls] = useState<string[]>([]);
   const [newUrl, setNewUrl] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [showUrlInput, setShowUrlInput] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   if (!isOpen) return null;
 
   const currentTenancy = activeTenancies.find((t) => t.id === tenancyId) || defaultTenancy;
+
+  async function handleFileUpload(files: FileList | null) {
+    if (!files || files.length === 0) return;
+    setError(null);
+    setIsUploading(true);
+
+    try {
+      const uploadPromises = Array.from(files).map(async (file) => {
+        if (!file.type.startsWith("image/")) {
+          throw new Error(`File "${file.name}" is not an image.`);
+        }
+        if (file.size > 10 * 1024 * 1024) {
+          throw new Error(`File "${file.name}" exceeds the 10MB limit.`);
+        }
+        const res = await uploadFile(file, "complaints");
+        if (!res.success || !res.data?.file_url) {
+          throw new Error(res.message || `Failed to upload "${file.name}".`);
+        }
+        return res.data.file_url;
+      });
+
+      const uploadedUrls = await Promise.all(uploadPromises);
+      setEvidenceUrls((prev) => [...prev, ...uploadedUrls]);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Failed to upload evidence photos.";
+      setError(msg);
+    } finally {
+      setIsUploading(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    }
+  }
 
   function handleAddUrl() {
     if (!newUrl.trim()) return;
@@ -253,19 +290,39 @@ export function ComplaintSubmissionModal({
 
           {/* Evidence Photos */}
           <div>
-            <label className="block text-xs font-semibold text-foreground mb-1">
-              Photo / Video Evidence URLs
-            </label>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="block text-xs font-semibold text-foreground">
+                Photo Evidence (Optional)
+              </label>
+              <button
+                type="button"
+                onClick={() => setShowUrlInput(!showUrlInput)}
+                className="text-[11px] text-primary hover:underline inline-flex items-center gap-1 font-medium"
+              >
+                <LinkIcon className="h-3 w-3" />
+                {showUrlInput ? "Hide URL paste" : "Paste image URL"}
+              </button>
+            </div>
+
+            {/* Uploaded Thumbnails */}
             {evidenceUrls.length > 0 && (
-              <div className="flex flex-wrap gap-2 mb-2">
+              <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 mb-3">
                 {evidenceUrls.map((url, idx) => (
-                  <div key={idx} className="relative group rounded-lg border border-border overflow-hidden bg-muted/30 p-1 flex items-center gap-1.5 text-xs max-w-full">
-                    <ImageIcon className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                    <span className="truncate max-w-[200px] text-[11px] font-mono">{url}</span>
+                  <div
+                    key={idx}
+                    className="relative aspect-square rounded-xl overflow-hidden border border-border bg-muted/30 group"
+                  >
+                    <Image
+                      src={url}
+                      alt={`Evidence ${idx + 1}`}
+                      fill
+                      unoptimized
+                      className="object-cover"
+                    />
                     <button
                       type="button"
                       onClick={() => handleRemoveUrl(idx)}
-                      className="rounded p-1 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                      className="absolute top-1 right-1 h-6 w-6 rounded-full bg-black/70 text-white flex items-center justify-center opacity-80 group-hover:opacity-100 hover:bg-destructive transition-all"
                       title="Remove photo"
                     >
                       <Trash2 className="h-3 w-3" />
@@ -275,37 +332,86 @@ export function ComplaintSubmissionModal({
               </div>
             )}
 
-            <div className="flex gap-2">
-              <input
-                type="url"
-                placeholder="Paste image URL (e.g. https://i.imgur.com/...)"
-                value={newUrl}
-                onChange={(e) => setNewUrl(e.target.value)}
-                className="flex-1 rounded-lg border border-border bg-background px-3 py-1.5 text-xs text-foreground focus:border-primary focus:outline-none"
-              />
-              <button
-                type="button"
-                onClick={handleAddUrl}
-                className="inline-flex items-center gap-1 rounded-lg border border-primary bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary hover:bg-primary/20 transition-colors shrink-0"
-              >
-                <Plus className="h-3.5 w-3.5" />
-                Add
-              </button>
+            {/* Hidden File Input */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              multiple
+              className="hidden"
+              onChange={(e) => handleFileUpload(e.target.files)}
+              disabled={isUploading || isLoading}
+            />
+
+            {/* Drag & Drop / Click Upload Box */}
+            <div
+              onClick={() => !isUploading && !isLoading && fileInputRef.current?.click()}
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={(e) => {
+                e.preventDefault();
+                if (!isUploading && !isLoading) {
+                  handleFileUpload(e.dataTransfer.files);
+                }
+              }}
+              className={`flex flex-col items-center justify-center gap-1.5 rounded-xl border border-dashed border-border p-4 text-center cursor-pointer transition-colors ${
+                isUploading
+                  ? "bg-muted/50 cursor-not-allowed opacity-75"
+                  : "hover:border-primary/50 hover:bg-primary/5 bg-muted/10"
+              }`}
+            >
+              {isUploading ? (
+                <>
+                  <Loader2 className="h-6 w-6 text-primary animate-spin" />
+                  <span className="text-xs font-semibold text-foreground">Uploading photo(s)...</span>
+                  <span className="text-[11px] text-muted-foreground">Saving directly to secure cloud storage</span>
+                </>
+              ) : (
+                <>
+                  <UploadCloud className="h-6 w-6 text-primary" />
+                  <span className="text-xs font-semibold text-foreground">
+                    Click to upload or drag & drop photos
+                  </span>
+                  <span className="text-[11px] text-muted-foreground">
+                    PNG, JPG, WebP from phone camera or gallery (Max 10MB)
+                  </span>
+                </>
+              )}
             </div>
+
+            {/* Optional URL input fallback */}
+            {showUrlInput && (
+              <div className="flex gap-2 mt-2">
+                <input
+                  type="url"
+                  placeholder="Paste image URL (e.g. https://...)"
+                  value={newUrl}
+                  onChange={(e) => setNewUrl(e.target.value)}
+                  className="flex-1 rounded-lg border border-border bg-background px-3 py-1.5 text-xs text-foreground focus:border-primary focus:outline-none"
+                />
+                <button
+                  type="button"
+                  onClick={handleAddUrl}
+                  className="inline-flex items-center gap-1 rounded-lg border border-primary bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary hover:bg-primary/20 transition-colors shrink-0"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  Add
+                </button>
+              </div>
+            )}
           </div>
 
           <div className="flex items-center justify-end gap-3 pt-3 border-t border-border">
             <button
               type="button"
               onClick={onClose}
-              disabled={isLoading}
-              className="rounded-lg border border-border px-4 py-2 text-xs font-semibold text-foreground hover:bg-muted transition-colors"
+              disabled={isLoading || isUploading}
+              className="rounded-lg border border-border px-4 py-2 text-xs font-semibold text-foreground hover:bg-muted transition-colors disabled:opacity-50"
             >
               Cancel
             </button>
             <button
               type="submit"
-              disabled={isLoading}
+              disabled={isLoading || isUploading}
               className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2 text-xs font-semibold text-primary-foreground shadow-sm hover:bg-primary/90 transition-colors disabled:opacity-50"
             >
               {isLoading && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
