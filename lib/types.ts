@@ -413,6 +413,10 @@ export interface EmergencyAlert {
   is_active: boolean;
   resolved_at?: string;
   created_at: string;
+  user_name?: string;
+  user_phone?: string;
+  property_title?: string;
+  resolution_notes?: string;
 }
 
 export interface CompatibilityResult {

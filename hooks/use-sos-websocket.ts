@@ -20,8 +20,9 @@ export function useSosWebSocket(userId: string = "guest") {
     ws.onmessage = (event) => {
       try {
         const payload = JSON.parse(event.data);
-        if (payload.type === "EMERGENCY_ALERT") {
-          setAlerts((prev) => [payload.data, ...prev]);
+        if (payload.type === "EMERGENCY_ALERT" || payload.event === "SOS_BROADCAST_ALERT") {
+          const alertData = payload.data || payload;
+          setAlerts((prev) => [alertData, ...prev]);
         }
       } catch {
         // Non-JSON ping/pong or system notice
