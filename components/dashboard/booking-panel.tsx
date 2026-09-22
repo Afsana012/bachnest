@@ -40,7 +40,10 @@ export function BookingPanel({ bookings, onChanged }: { bookings: Booking[]; onC
     if (targetBookingId) {
       const match = bookings.find((b) => b.id === targetBookingId);
       if (match) {
-        setSelectedContactBooking(match);
+        const timer = setTimeout(() => {
+          setSelectedContactBooking(match);
+        }, 0);
+        return () => clearTimeout(timer);
       }
     }
   }, [bookings]);
